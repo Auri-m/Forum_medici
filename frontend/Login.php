@@ -1,4 +1,23 @@
 
+<?php
+    require_once 'database.php';
+    try {
+    $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
+    $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    }// try
+    catch(PDOException $e){
+        die("Errore nella gestione del database $db: " . $e->getMessage () ); 
+    }// catch
+
+    $_SESSION["accesso"] = true;
+
+    if(isset($_SESSION["errore"]) && $_SESSION["errore"] == -1){
+            echo "ERRORE!!! Utente già registrato o username e password errati!";
+            $_SESSION["errore"]=0;
+    }
+?>
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -623,7 +642,7 @@
                 <p class="form-sub">Inserisci le tue credenziali per accedere alla community.</p>
             </div>
 
-            <form action="prima.php" method="post" autocomplete="off">
+            <form action="home.php" method="post" autocomplete="off">
 
                 <div class="field">
                     <label for="username">Username</label>

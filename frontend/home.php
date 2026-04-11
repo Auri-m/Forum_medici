@@ -1,3 +1,59 @@
+<?php
+    require_once 'database.php'; // includo il file di configurazione
+    try {
+    $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
+    $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    }// try
+    catch(PDOException $e){
+        die("Errore nella gestione del database $db: " . $e->getMessage () ); 
+    }// catch
+
+    if ($_SESSION["accesso"] == true) {
+        $username_post = $_POST["username"];
+        $password_post = $_POST["password"];
+        $sql1 = "SELECT username, password FROM  credenziali ORDER BY username,password";
+        $preparata1 = $connessione->prepare($sql1);
+        $preparata1->execute();
+
+        $accesso_riuscito = false;
+        if($preparata1->rowCount() > 0){
+            // creazione di un array multidimensionale contenente il risultato
+            $array = $preparata1->fetchAll();
+            // ciclo di visualizzazione dei risultati
+            foreach($array as $riga){
+                if($riga ['username'] === $username_post && $riga ['password'] === $password_post){
+                    $_SESSION["loggato"] = $username_post;
+                    $_SESSION["benvenuto"] = true;
+                    $_SESSION["accesso"] = false;
+                    $accesso_riuscito = true;
+                }// if
+            }// foreach
+        }// if
+
+        if (!$accesso_riuscito) {
+            $_SESSION["errore"] = -1;
+            header("Location: Login.php");
+            exit();
+        }
+
+        if (!isset($_SESSION["loggato"])) {
+            $_SESSION["errore"] = -1;
+            header("Location: Login.php");
+            exit();
+        }// if
+
+    }// if
+
+    $benvenuto = false;
+
+    if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
+        $benvenuto = true;
+        unset($_SESSION["benvenuto"]); 
+    }// if
+
+?>
+
+
 <!DOCTYPE html>
 <html lang="it">
 <head>

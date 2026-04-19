@@ -12,10 +12,7 @@
 
     $_SESSION["accesso"] = true;
 
-    if(isset($_SESSION["errore"]) && $_SESSION["errore"] == -1){
-            echo "ERRORE!!! Utente già registrato o username e password errati!";
-            $_SESSION["errore"]=0;
-    }
+    
 ?>
 
 <!DOCTYPE html>
@@ -641,6 +638,16 @@
                 <h1 class="form-title">Bentornato,<br><em>Collega</em></h1>
                 <p class="form-sub">Inserisci le tue credenziali per accedere alla community.</p>
             </div>
+
+            <?php
+                if(isset($_SESSION["errore"]) && $_SESSION["errore"] == -1){
+                    echo '<div style="color: red; border: 2px solid red; background-color: white; border-radius: 15px; padding: 8px 15px; width: fit-content; margin: 10px 0; font-family: sans-serif; font-size: 14px;">';
+                    echo 'ERRORE!!! Utente già registrato o username e password errati!';
+                    echo '</div>';
+        
+                    $_SESSION["errore"]=0;
+                }
+            ?>
 
             <form action="home.php" method="post" autocomplete="off">
 

@@ -11,7 +11,7 @@ catch (PDOException $e) {
 if ($_SESSION["accesso"] == true) {
   $username_post = $_POST["username"];
   $password_post = $_POST["password"];
-  $sql = "SELECT username, password FROM  credenziali ORDER BY username,password";
+  $sql = "SELECT username, password, dottore FROM credenziali ORDER BY username, password";
   $credenziali = $connessione->prepare($sql);
   $credenziali->execute();
 
@@ -22,34 +22,20 @@ if ($_SESSION["accesso"] == true) {
     // ciclo di visualizzazione dei risultati
     foreach ($array as $riga) {
       if ($riga['username'] === $username_post && $riga['password'] === $password_post) {
-        $_SESSION["loggato"] = $username_post;
-        $_SESSION["benvenuto"] = true;
+        $_SESSION["utente"] = $riga['dottore'];
         $_SESSION["accesso"] = false;
         $accesso_riuscito = true;
       }// if
     }// foreach
   }// if
 
-  if (!$accesso_riuscito) {
+  if (!$accesso_riuscito || !isset($_SESSION["utente"])) {
+    unset($_SESSION["utente"]);
     $_SESSION["errore"] = -1;
     header("Location: Login.php");
     exit();
   }
-
-  if (!isset($_SESSION["loggato"])) {
-    $_SESSION["errore"] = -1;
-    header("Location: Login.php");
-    exit();
-  }// if
-
-}// if
-
-$benvenuto = false;
-
-if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
-  $benvenuto = true;
-  unset($_SESSION["benvenuto"]);
-}// if
+}
 
 ?>
 
@@ -265,7 +251,7 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
     }
 
     .nav-search input {
-      width: 100%;
+      width: 250px;
       padding: 8px 14px 8px 36px;
       border: 1.5px solid var(--border);
       border-radius: 10px;
@@ -310,7 +296,8 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-shrink: 0
+      flex-shrink: 0;
+      margin-left: auto;
     }
 
     .icon-btn {
@@ -388,7 +375,8 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
       font-size: 10px;
       font-weight: 700;
       letter-spacing: .02em;
-      flex-shrink: 0
+      flex-shrink: 0;
+      border: 1px solid rgba(114, 126, 125, 0.26);
     }
 
     /* ══════════ HERO SLIDESHOW ══════════ */
@@ -1825,7 +1813,8 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
         <div class="live-dot"></div> 1.240 medici online ora
       </div>
       <span>·</span>
-      <a href="#">📋 Linee guida ESC 2025 aggiornate</a>
+      <a href="https://www.giornaledicardiologia.it/archivio/4570/articoli/45733/">📋 Linee guida ESC 2025
+        aggiornate</a>
     </div>
     <div class="topbar-right">
       <a href="#">ECM & Formazione</a>
@@ -1835,19 +1824,11 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
   </div>
 
   <!-- ══ HEADER ══ -->
-  <header>
+  <header style="display: flex; flex-wrap: wrap">
     <a href="index.php" class="nav-logo">
       <span class="cross">✚</span>
       MedicoForum
     </a>
-
-    <nav class="nav-links">
-      <a href="#" class="active">🏠 Home</a>
-      <a href="#">🩺 Casi Clinici</a>
-      <a href="#">📚 Ricerca</a>
-      <a href="#">🤝 Network</a>
-      <a href="#">📅 Congressi</a>
-    </nav>
 
     <div class="nav-search">
       <div class="search-icon">
@@ -1878,8 +1859,23 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
         </svg>
       </a>
       <a href="profilo.php" class="profile-pill">
-        <span class="avatar">DR</span>
-        Dr. Rossi
+        <?php
+        $sql = "SELECT dottori.nome AS nome, cognome, sesso, citta, foto_profilo, specializzazioni.nome AS nomeS FROM dottori, ospedali, specializzazioni WHERE ospedale=id_ospedale AND specializzazione=codice AND id_dottore=?";
+        $profilo = $connessione->prepare($sql);
+        $profilo->execute(array($_SESSION['utente']));
+
+        if ($profilo->rowCount() > 0) {
+          $profilo = $profilo->fetch(PDO::FETCH_ASSOC);
+          echo '<img src="img/' . $profilo["foto_profilo"] . '" class="avatar">';
+          if ($profilo["sesso"] == 'm') {
+            echo 'Dr. ';
+          } else {
+            echo 'Dott.ssa ';
+          }
+          echo $profilo["cognome"];
+        }
+
+        ?>
       </a>
     </div>
   </header>
@@ -1895,7 +1891,8 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
           <h2 class="slide-title">Nuove linee guida ESC sulla <em>fibrillazione atriale</em></h2>
           <p class="slide-desc">L'European Society of Cardiology ha pubblicato le raccomandazioni aggiornate 2025.
             Partecipa alla discussione con i tuoi colleghi cardiologi.</p>
-          <a href="#" class="slide-btn">Leggi la discussione →</a>
+          <a href="https://www.giornaledicardiologia.it/archivio/4419/articoli/44150/" class="slide-btn">Leggi la
+            discussione →</a>
         </div>
       </div>
     </div>
@@ -1908,7 +1905,8 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
           <h2 class="slide-title">Diagnosi differenziale di <em>FUO</em> in paziente immunocompromesso</h2>
           <p class="slide-desc">Un caso complesso di febbre di origine sconosciuta che ha coinvolto 12 specialisti da
             tutta Italia. Condividi la tua esperienza.</p>
-          <a href="#" class="slide-btn">Partecipa →</a>
+          <a href="https://dottornaddaf.wordpress.com/2011/03/09/febbre-di-origine-sconosciuta-fuo/"
+            class="slide-btn">Partecipa →</a>
         </div>
       </div>
     </div>
@@ -1918,10 +1916,11 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
       <div class="slide-content">
         <div class="slide-inner">
           <div class="slide-tag">Congresso</div>
-          <h2 class="slide-title">Congresso Nazionale <em>ANMCO 2025</em> — Milano</h2>
+          <h2 class="slide-title">Congresso Nazionale <em>ANMCO 2025</em> — Rimini</h2>
           <p class="slide-desc">12-14 Aprile · Fieramilano. Iscriviti gratuitamente tramite MedicoForum e ottieni
             crediti ECM.</p>
-          <a href="#" class="slide-btn">Iscriviti gratis →</a>
+          <a href="https://cardioinfo.it/congresso/anmco/2025/56-congresso-nazionale-anmco-appuntamento-a-rimini-dal-15-al-17-maggio/"
+            class="slide-btn">Iscriviti gratis →</a>
         </div>
       </div>
     </div>
@@ -1934,7 +1933,8 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
           <h2 class="slide-title">FDA approva nuovo inibitore per <em>tumori HER2+</em></h2>
           <p class="slide-desc">La comunità oncologica di MedicoForum sta analizzando l'impatto clinico
             dell'approvazione. Unisciti al dibattito.</p>
-          <a href="#" class="slide-btn">Scopri di più →</a>
+          <a href="https://www.aifa.gov.it/-/fda-approva-un-nuovo-trattamento-per-ridurre-il-rischio-di-recidive-del-cancro-al-seno"
+            class="slide-btn">Scopri di più →</a>
         </div>
       </div>
     </div>
@@ -2006,33 +2006,19 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
         <div class="profile-card">
           <div class="profile-cover"></div>
           <div class="profile-info">
-            <div class="big-avatar">DR</div>
-            <div class="pname">Dr. Mario Rossi</div>
-            <div class="pspec">Medicina Interna · Bologna</div>
-            <div class="profile-stats">
-              <div class="pstat">
-                <div class="pstat-num">24</div>
-                <div class="pstat-label">Post</div>
-              </div>
-              <div class="pstat">
-                <div class="pstat-num">138</div>
-                <div class="pstat-label">Risposte</div>
-              </div>
-              <div class="pstat">
-                <div class="pstat-num">4</div>
-                <div class="pstat-label">Salvati</div>
-              </div>
-              <div class="pstat">
-                <div class="pstat-num">92</div>
-                <div class="pstat-label">Like</div>
-              </div>
-            </div>
-          </div>
-          <div class="profile-complete">
-            <div class="complete-label">Profilo completato <span>72%</span></div>
-            <div class="complete-bar">
-              <div class="complete-fill"></div>
-            </div>
+            <?php
+
+            echo '<img src="img/' . $profilo["foto_profilo"] . '" class="big-avatar">
+                  <div class="pname">';
+            if ($profilo["sesso"] == 'm') {
+              echo 'Dr. ';
+            } else {
+              echo 'Dott.ssa ';
+            }
+            echo $profilo["nome"] . ' ' . $profilo["cognome"] . '</div>
+                <div class="pspec">' . $profilo["nomeS"] . ' · ' . $profilo["citta"] . '</div>';
+
+            ?>
           </div>
         </div>
       </div>
@@ -2063,22 +2049,6 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
         </div>
       </div>
 
-      <!-- Quick links -->
-      <div class="widget">
-        <div class="widget-header">
-          <span class="widget-title"><span class="widget-title-icon">⚡</span> Accesso rapido</span>
-        </div>
-        <div class="widget-body" style="padding:10px 14px">
-          <div class="quick-links">
-            <a href="#" class="quick-link"><span class="quick-link-icon">📌</span> Post salvati</a>
-            <a href="#" class="quick-link"><span class="quick-link-icon">📊</span> Le mie statistiche</a>
-            <a href="#" class="quick-link"><span class="quick-link-icon">🏆</span> Badge e riconoscimenti</a>
-            <a href="#" class="quick-link"><span class="quick-link-icon">📅</span> I miei congressi</a>
-            <a href="#" class="quick-link"><span class="quick-link-icon">⚙️</span> Impostazioni</a>
-          </div>
-        </div>
-      </div>
-
     </aside>
 
     <!-- ══ FEED CENTRALE ══ -->
@@ -2088,22 +2058,6 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
         <div class="feed-title-group">
           <div class="feed-label">Community</div>
           <div class="feed-title">Discussioni recenti</div>
-        </div>
-        <div class="feed-tabs">
-          <button class="feed-tab active">🔥 Popolari</button>
-          <button class="feed-tab">🕐 Recenti</button>
-          <button class="feed-tab">⭐ Seguiti</button>
-          <button class="feed-tab">📌 Salvati</button>
-        </div>
-      </div>
-
-      <!-- New post box -->
-      <div class="new-post-box">
-        <div class="new-post-avatar">DR</div>
-        <div class="new-post-placeholder">Condividi un caso clinico o fai una domanda ai colleghi…</div>
-        <div class="new-post-actions">
-          <div class="np-btn" title="Immagine">📷</div>
-          <div class="np-btn" title="File">📎</div>
         </div>
       </div>
 
@@ -2121,12 +2075,12 @@ if (isset($_SESSION["benvenuto"]) && $_SESSION["benvenuto"] === true) {
                 <img src="img/' . $postSingolo["foto_profilo"] . '" class="author-avatar a3">
                 <div>
                   <div class="author-name">';
-                  if($postSingolo["sesso"] == 'm'){
-                    echo 'Dr. ';
-                  } else {
-                    echo 'Dott.ssa ';
-                  }
-                  echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '</div>
+          if ($postSingolo["sesso"] == 'm') {
+            echo 'Dr. ';
+          } else {
+            echo 'Dott.ssa ';
+          }
+          echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '</div>
                   <div class="author-meta"><span>' . $postSingolo["nomeS"] . '</span></div>
                 </div>
               </div>

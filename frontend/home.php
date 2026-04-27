@@ -1,44 +1,46 @@
 <?php
-require_once 'database.php'; // includo il file di configurazione
+require_once 'database.php';
+
+
+if (!isset($_POST["username"]) || !isset($_POST["password"])) {
+  
+    if (!isset($_SESSION["utente"])) {
+        header("Location: Login.php");
+        exit();
+    }
+    return; 
+}
+
 try {
-  $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
-  $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-}// try
-catch (PDOException $e) {
-  die("Errore nella gestione del database $db: " . $e->getMessage());
-}// catch
+    $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
+    $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Errore nella gestione del database $db: " . $e->getMessage());
+}
 
-if ($_SESSION["accesso"] == true) {
-  $username_post = $_POST["username"];
-  $password_post = $_POST["password"];
-  $sql = "SELECT username, password, dottore FROM credenziali ORDER BY username, password";
-  $credenziali = $connessione->prepare($sql);
-  $credenziali->execute();
+$username_post = $_POST["username"];
+$password_post = $_POST["password"];
 
-  $accesso_riuscito = false;
-  if ($credenziali->rowCount() > 0) {
-    // creazione di un array multidimensionale contenente il risultato
-    $array = $credenziali->fetchAll();
-    // ciclo di visualizzazione dei risultati
-    foreach ($array as $riga) {
-      if ($riga['username'] === $username_post && $riga['password'] === $password_post) {
-        $_SESSION["utente"] = $riga['dottore'];
-        $_SESSION["accesso"] = false;
-        $accesso_riuscito = true;
-      }// if
-    }// foreach
-  }// if
+$sql = "SELECT username, password, dottore FROM credenziali WHERE username = :username";
+$credenziali = $connessione->prepare($sql);
+$credenziali->execute([':username' => $username_post]);
 
-  if (!$accesso_riuscito || !isset($_SESSION["utente"])) {
+$riga = $credenziali->fetch();
+$accesso_riuscito = false;
+
+if ($riga && $riga['password'] === $password_post) {
+    $_SESSION["utente"] = $riga['dottore'];
+    $_SESSION["accesso"] = false;
+    $accesso_riuscito = true;
+}
+
+if (!$accesso_riuscito) {
     unset($_SESSION["utente"]);
     $_SESSION["errore"] = -1;
     header("Location: Login.php");
     exit();
-  }
 }
-
 ?>
-
 
 <!DOCTYPE html>
 <html lang="it">

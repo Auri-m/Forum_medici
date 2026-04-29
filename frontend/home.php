@@ -1,10 +1,10 @@
 <?php
 require_once 'database.php'; // includo il file di configurazione
 try {
-    $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
-    $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+  $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
+  $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Errore nella gestione del database $db: " . $e->getMessage());
+  die("Errore nella gestione del database $db: " . $e->getMessage());
 }
 
 $username_post = $_POST["username"];
@@ -18,17 +18,37 @@ $riga = $credenziali->fetch();
 $accesso_riuscito = false;
 
 if ($riga && $riga['password'] === $password_post) {
-    $_SESSION["utente"] = $riga['dottore'];
-    $_SESSION["accesso"] = false;
-    $accesso_riuscito = true;
+  $_SESSION["utente"] = $riga['dottore'];
+  $_SESSION["accesso"] = false;
+  $accesso_riuscito = true;
 }
 
 if (!$accesso_riuscito) {
-    unset($_SESSION["utente"]);
-    $_SESSION["errore"] = -1;
-    header("Location: Login.php");
-    exit();
+  unset($_SESSION["utente"]);
+  $_SESSION["errore"] = -1;
+  header("Location: Login.php");
+  exit();
 }
+
+
+// ── Gestione nuova discussione ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'nuova_discussione') {
+  $titolo = trim($_POST['titolo'] ?? '');
+  $corpo = trim($_POST['corpo'] ?? '');
+  $spec = !empty($_POST['specializzazione']) ? (int) $_POST['specializzazione'] : null;
+  $exp = !empty($_POST['anni_exp']) ? (int) $_POST['anni_exp'] : null;
+  $osp = !empty($_POST['ospedale']) ? (int) $_POST['ospedale'] : null;
+
+  if ($titolo !== '' && $corpo !== '') {
+    $sql = "INSERT INTO domande (titolo, corpo, dottore, specializzazione_filtro, anni_exp_filtro, ospedale_filtro, data_domanda)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())";
+    $ins = $connessione->prepare($sql);
+    $ins->execute([$titolo, $corpo, $_SESSION['utente'], $spec, $exp, $osp]);
+  }
+  header("Location: home.php");
+  exit();
+}
+
 // ── Fetch selects per il modale ──
 $sql_spec = "SELECT codice, nome FROM specializzazioni ORDER BY nome";
 $stmt_spec = $connessione->prepare($sql_spec);

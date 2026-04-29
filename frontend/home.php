@@ -1,16 +1,5 @@
 <?php
-require_once 'database.php';
-
-
-if (!isset($_POST["username"]) || !isset($_POST["password"])) {
-  
-    if (!isset($_SESSION["utente"])) {
-        header("Location: Login.php");
-        exit();
-    }
-    return; 
-}
-
+require_once 'database.php'; // includo il file di configurazione
 try {
     $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
     $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -40,7 +29,18 @@ if (!$accesso_riuscito) {
     header("Location: Login.php");
     exit();
 }
+// ── Fetch selects per il modale ──
+$sql_spec = "SELECT codice, nome FROM specializzazioni ORDER BY nome";
+$stmt_spec = $connessione->prepare($sql_spec);
+$stmt_spec->execute();
+$elenco_spec = $stmt_spec->fetchAll(PDO::FETCH_ASSOC);
+
+$sql_osp = "SELECT id_ospedale, nome, citta FROM ospedali ORDER BY nome";
+$stmt_osp = $connessione->prepare($sql_osp);
+$stmt_osp->execute();
+$elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
 
 <!DOCTYPE html>
 <html lang="it">
@@ -1578,7 +1578,8 @@ if (!$accesso_riuscito) {
       box-shadow: 0 6px 28px rgba(15, 159, 142, .4);
       transition: all .2s;
       z-index: 100;
-      font-family: 'DM Sans', sans-serif
+      font-family: 'DM Sans', sans-serif;
+      border-color: lightseagreen;
     }
 
     .fab:hover {
@@ -1802,6 +1803,167 @@ if (!$accesso_riuscito) {
         height: 46px;
         font-size: 13px
       }
+    }
+
+    /* ══════════ MODALE NUOVA DISCUSSIONE ══════════ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(13, 31, 60, .55);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s ease
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all
+    }
+
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -46%) scale(.96);
+      z-index: 1001;
+      width: min(600px, 94vw);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: var(--white);
+      border-radius: 22px;
+      box-shadow: 0 32px 80px rgba(13, 31, 60, .22);
+      border: 1px solid var(--border);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .28s ease, transform .28s cubic-bezier(.34, 1.56, .64, 1)
+    }
+
+    .modal.open {
+      opacity: 1;
+      pointer-events: all;
+      transform: translate(-50%, -50%) scale(1)
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 26px 18px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .modal-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      color: var(--navy)
+    }
+
+    .modal-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+      line-height: 1
+    }
+
+    .modal-close:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #dc2626
+    }
+
+    .modal-body {
+      padding: 22px 26px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px
+    }
+
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    .modal-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      color: var(--muted)
+    }
+
+    .modal-input,
+    .modal-textarea,
+    .modal-select {
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--navy);
+      background: var(--bg);
+      outline: none;
+      transition: all .2s;
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none
+    }
+
+    .modal-input:focus,
+    .modal-textarea:focus,
+    .modal-select:focus {
+      border-color: var(--teal);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(15, 159, 142, .08)
+    }
+
+    .modal-textarea {
+      resize: vertical;
+      min-height: 120px;
+      line-height: 1.6
+    }
+
+    .modal-filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px
+    }
+
+    .modal-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .modal-submit {
+      padding: 14px;
+      background: linear-gradient(135deg, var(--teal), var(--teal2));
+      color: #fff;
+      border: none;
+      border-radius: 13px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(15, 159, 142, .25);
+      transition: all .2s;
+      margin-top: 4px
+    }
+
+    .modal-submit:hover {
+      opacity: .9;
+      transform: translateY(-1px)
     }
   </style>
 </head>
@@ -2065,7 +2227,10 @@ if (!$accesso_riuscito) {
 
       <!-- POST -->
       <?php
-      $sql = "SELECT titolo, domande.corpo, d.nome AS nomeD, cognome, sesso, foto_profilo, s.nome AS nomeS, COUNT(*) AS nRisposte FROM domande, dottori AS d, specializzazioni AS s, risposte WHERE (domande.dottore=id_dottore) AND (specializzazione=codice) AND (domanda=id_domanda) GROUP BY id_domanda";
+      $sql = "SELECT id_domanda, titolo, domande.corpo, d.nome AS nomeD, cognome, sesso, foto_profilo, s.nome AS nomeS, COUNT(*) AS nRisposte, specializzazione_filtro, anni_exp_filtro, ospedale_filtro
+              FROM domande, dottori AS d, specializzazioni AS s, risposte
+              WHERE (domande.dottore=id_dottore) AND (specializzazione=codice) AND (domanda=id_domanda) 
+              GROUP BY id_domanda";
       $post = $connessione->prepare($sql);
       $post->execute();
 
@@ -2086,7 +2251,12 @@ if (!$accesso_riuscito) {
                   <div class="author-meta"><span>' . $postSingolo["nomeS"] . '</span></div>
                 </div>
               </div>
-              <div class="card-tags"><span class="spec-tag">FILTRO DA AGGIUNGERE</span></div>
+              <div class="card-tags">
+                <span class="spec-tag">' . $postSingolo['specializzazione_filtro'] . '</span>
+                <span class="spec-tag">' . $postSingolo['anni_exp_filtro'] . '</span>
+                <span class="spec-tag">' . $postSingolo['ospedale_filtro'] . '</span>
+                <span class="spec-tag">Non sono presenti filtri</span>
+              </div>
             </div>
             <h2 class="question-title">' . $postSingolo["titolo"] . '</h2>
             <p class="question-preview">' . $postSingolo["corpo"] . '</p>
@@ -2099,7 +2269,7 @@ if (!$accesso_riuscito) {
                   ' . $postSingolo["nRisposte"] . ' risposte
                 </button>
               </div>
-              <a href="#" class="read-more">Leggi tutto →</a>
+              <a href="discussione.php?id=' . $postSingolo["id_domanda"] . '" class="read-more">Leggi tutto →</a>
             </div>
           </article>';
         }
@@ -2205,10 +2375,75 @@ if (!$accesso_riuscito) {
   </div>
 
   <!-- ══ FAB ══ -->
-  <a href="/nuova-domanda" class="fab">
+  <button id="fabNuovaDisc" class="fab">
     <span class="fab-plus">+</span>
     Nuova discussione
-  </a>
+  </button>
+
+  <!-- ══ MODALE NUOVA DISCUSSIONE ══ -->
+  <div class="modal-overlay" id="modalOverlay"></div>
+  <div class="modal" id="modalNuovaDisc" role="dialog" aria-modal="true" aria-labelledby="modalTitleLabel">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitleLabel">✍️ Nuova discussione</div>
+      <button class="modal-close" id="closeModal" aria-label="Chiudi">✕</button>
+    </div>
+    <form method="POST" action="home.php">
+      <input type="hidden" name="action" value="nuova_discussione">
+      <div class="modal-body">
+
+        <div class="modal-field">
+          <label class="modal-label" for="nd_titolo">Titolo *</label>
+          <input class="modal-input" id="nd_titolo" name="titolo" type="text"
+            placeholder="Es. Gestione empirica di polmonite atipica in anziano…" required maxlength="255">
+        </div>
+
+        <div class="modal-field">
+          <label class="modal-label" for="nd_corpo">Corpo del post *</label>
+          <textarea class="modal-textarea" id="nd_corpo" name="corpo"
+            placeholder="Descrivi il caso, la domanda o la riflessione che vuoi condividere con i tuoi colleghi…"
+            required></textarea>
+        </div>
+
+        <div class="modal-field">
+          <div class="modal-label" style="margin-bottom:4px">Filtri <span class="modal-hint">(opzionali)</span></div>
+          <div class="modal-filters">
+
+            <div class="modal-field">
+              <label class="modal-label" for="nd_spec">Specializzazione</label>
+              <select class="modal-select" id="nd_spec" name="specializzazione">
+                <option value="">Tutte</option>
+                <?php foreach ($elenco_spec as $s): ?>
+                  <option value="<?= htmlspecialchars($s['codice']) ?>"><?= htmlspecialchars($s['nome']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label" for="nd_exp">Anni di esperienza</label>
+              <input class="modal-input" id="nd_exp" name="anni_exp" type="number" min="0" max="60"
+                placeholder="es. 10">
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label" for="nd_osp">Ospedale / Città</label>
+              <select class="modal-select" id="nd_osp" name="ospedale">
+                <option value="">Tutti</option>
+                <?php foreach ($elenco_osp as $o): ?>
+                  <option value="<?= htmlspecialchars($o['id_ospedale']) ?>">
+                    <?= htmlspecialchars($o['nome'] . ' — ' . $o['citta']) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        <button type="submit" class="modal-submit">Pubblica discussione →</button>
+
+      </div>
+    </form>
+  </div>
 
   <!-- ══ FILTER DRAWER ══ -->
   <div class="overlay" id="overlay"></div>
@@ -2309,6 +2544,27 @@ if (!$accesso_riuscito) {
         });
       });
     });
+
+    // ── Modal Nuova Discussione ──
+    const fabBtn = document.getElementById('fabNuovaDisc');
+    const modal = document.getElementById('modalNuovaDisc');
+    const closeModal = document.getElementById('closeModal');
+    const modalOverlay = document.getElementById('modalOverlay');
+
+    fabBtn.addEventListener('click', () => {
+      modal.classList.add('open');
+      modalOverlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    });
+
+    function chiudiModal() {
+      modal.classList.remove('open');
+      modalOverlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    closeModal.addEventListener('click', chiudiModal);
+    modalOverlay.addEventListener('click', chiudiModal);
 
     // ── Like toggle ──
     document.querySelectorAll('.card-action').forEach(btn => {

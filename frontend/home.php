@@ -21,6 +21,7 @@ if (!empty($_SESSION['utente']) && !$_SESSION["accesso"]) {
   $riga = $credenziali->fetch();
   $accesso_riuscito = false;
 
+<<<<<<< HEAD
   if ($riga && $riga['password'] === $password_post) {
     $_SESSION["utente"] = $riga['dottore'];
     $_SESSION["accesso"] = false;
@@ -35,6 +36,23 @@ if (!empty($_SESSION['utente']) && !$_SESSION["accesso"]) {
   }
 }
 
+=======
+if ($riga && $riga['password'] === $password_post) {
+  $_SESSION["utente"] = $riga['dottore'];
+  $_SESSION["accesso"] = false;
+  $accesso_riuscito = true;
+}
+
+if (!$accesso_riuscito) {
+  unset($_SESSION["utente"]);
+  $_SESSION["errore"] = -1;
+  header("Location: Login.php");
+  exit();
+}
+
+
+// ── Gestione nuova discussione ──
+>>>>>>> 3b332312760e69449220779db658b6cdbc6ba79e
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'nuova_discussione') {
   $titolo = trim($_POST['titolo'] ?? '');
   $corpo = trim($_POST['corpo'] ?? '');
@@ -2184,6 +2202,125 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
   <!-- ══ LAYOUT 3 COLONNE ══ -->
   <div class="page-wrapper">
 
+<<<<<<< HEAD
+=======
+    <!-- ══ SIDEBAR SINISTRA ══ -->
+    <aside class="sidebar sidebar-left">
+
+      <!-- Profilo -->
+      <div class="profile-widget">
+        <div class="profile-card">
+          <div class="profile-cover"></div>
+          <div class="profile-info">
+            <?php
+
+            echo '<img src="img/' . $profilo["foto_profilo"] . '" class="big-avatar">
+                  <div class="pname">';
+            if ($profilo["sesso"] == 'm') {
+              echo 'Dr. ';
+            } else {
+              echo 'Dott.ssa ';
+            }
+            echo $profilo["nome"] . ' ' . $profilo["cognome"] . '</div>
+                <div class="pspec">' . $profilo["nomeS"] . ' · ' . $profilo["citta"] . '</div>';
+
+            ?>
+          </div>
+        </div>
+      </div>
+
+      <!-- Specializzazioni -->
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title"><span class="widget-title-icon">🏷️</span> Specializzazioni</span>
+          <a href="#" class="widget-link">Tutte →</a>
+        </div>
+        <div class="widget-body">
+          <ul class="spec-list">
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🫀</span> Cardiologia</span><span
+                  class="count-pill">48</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">👶</span> Pediatria</span><span
+                  class="count-pill">31</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🧠</span> Neurologia</span><span
+                  class="count-pill">27</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🩺</span> Med. Interna</span><span
+                  class="count-pill">22</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🦴</span> Ortopedia</span><span
+                  class="count-pill">15</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🔬</span> Oncologia</span><span
+                  class="count-pill">19</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🫁</span> Pneumologia</span><span
+                  class="count-pill">14</span></a></li>
+          </ul>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ══ FEED CENTRALE ══ -->
+    <main>
+
+      <div class="feed-header">
+        <div class="feed-title-group">
+          <div class="feed-label">Community</div>
+          <div class="feed-title">Discussioni recenti</div>
+        </div>
+      </div>
+
+      <!-- POST -->
+      <?php
+      $sql = "SELECT id_domanda, titolo, domande.corpo, d.nome AS nomeD, cognome, sesso, foto_profilo, s.nome AS nomeS, COUNT(*) AS nRisposte, specializzazione_filtro, anni_exp_filtro, ospedale_filtro
+              FROM domande, dottori AS d, specializzazioni AS s, risposte
+              WHERE (domande.dottore=id_dottore) AND (specializzazione=codice) AND (domanda=id_domanda) 
+              GROUP BY id_domanda";
+      $post = $connessione->prepare($sql);
+      $post->execute();
+
+      if ($post->rowCount() > 0) {
+        while ($postSingolo = $post->fetch(PDO::FETCH_ASSOC)) {
+          echo '<article class="question-card">
+            <div class="card-top">
+              <div class="author-row">
+                <img src="img/' . $postSingolo["foto_profilo"] . '" class="author-avatar a3">
+                <div>
+                  <div class="author-name">';
+          if ($postSingolo["sesso"] == 'm') {
+            echo 'Dr. ';
+          } else {
+            echo 'Dott.ssa ';
+          }
+          echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '</div>
+                  <div class="author-meta"><span>' . $postSingolo["nomeS"] . '</span></div>
+                </div>
+              </div>
+              <div class="card-tags">
+                <span class="spec-tag">' . $postSingolo['specializzazione_filtro'] . '</span>
+                <span class="spec-tag">' . $postSingolo['anni_exp_filtro'] . '</span>
+                <span class="spec-tag">' . $postSingolo['ospedale_filtro'] . '</span>
+                <span class="spec-tag">Non sono presenti filtri</span>
+              </div>
+            </div>
+            <h2 class="question-title">' . $postSingolo["titolo"] . '</h2>
+            <p class="question-preview">' . $postSingolo["corpo"] . '</p>
+            <div class="card-footer">
+              <div class="card-actions">
+                <button class="card-action">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  ' . $postSingolo["nRisposte"] . ' risposte
+                </button>
+              </div>
+              <a href="discussione.php?id=' . $postSingolo["id_domanda"] . '" class="read-more">Leggi tutto →</a>
+            </div>
+          </article>';
+        }
+      }
+      ?>
+
+    </main>
+
+>>>>>>> 3b332312760e69449220779db658b6cdbc6ba79e
     <!-- ══ SIDEBAR DESTRA ══ -->
     <aside class="sidebar sidebar-right">
 

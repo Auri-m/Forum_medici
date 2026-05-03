@@ -1,46 +1,69 @@
 <?php
-require_once 'database.php';
-
-
-if (!isset($_POST["username"]) || !isset($_POST["password"])) {
-  
-    if (!isset($_SESSION["utente"])) {
-        header("Location: Login.php");
-        exit();
-    }
-    return; 
-}
-
+require_once 'database.php'; // includo il file di configurazione
 try {
-    $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
-    $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+  $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
+  $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Errore nella gestione del database $db: " . $e->getMessage());
+  die("Errore nella gestione del database $db: " . $e->getMessage());
 }
 
-$username_post = $_POST["username"];
-$password_post = $_POST["password"];
+if (!empty($_SESSION['utente']) && !$_SESSION["accesso"]) {
+  unset($_SESSION["errore"]);
+  echo "<script>console.log('entro');</script>";
+} else {
+  $username_post = $_POST["username"];
+  $password_post = $_POST["password"];
 
-$sql = "SELECT username, password, dottore FROM credenziali WHERE username = :username";
-$credenziali = $connessione->prepare($sql);
-$credenziali->execute([':username' => $username_post]);
+  $sql = "SELECT username, password, dottore FROM credenziali WHERE username = ?";
+  $credenziali = $connessione->prepare($sql);
+  $credenziali->execute([$username_post]);
 
-$riga = $credenziali->fetch();
-$accesso_riuscito = false;
+  $riga = $credenziali->fetch();
+  $accesso_riuscito = false;
 
-if ($riga && $riga['password'] === $password_post) {
+  if ($riga && $riga['password'] === $password_post) {
     $_SESSION["utente"] = $riga['dottore'];
     $_SESSION["accesso"] = false;
     $accesso_riuscito = true;
-}
+  }
 
-if (!$accesso_riuscito) {
+  if (!$accesso_riuscito) {
     unset($_SESSION["utente"]);
     $_SESSION["errore"] = -1;
     header("Location: Login.php");
     exit();
+  }
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'nuova_discussione') {
+  $titolo = trim($_POST['titolo'] ?? '');
+  $corpo = trim($_POST['corpo'] ?? '');
+  $spec = !empty($_POST['specializzazione']) ? (int) $_POST['specializzazione'] : null;
+  $exp = !empty($_POST['anni_exp']) ? (int) $_POST['anni_exp'] : null;
+  $osp = !empty($_POST['ospedale']) ? (int) $_POST['ospedale'] : null;
+
+  if ($titolo !== '' && $corpo !== '') {
+    $sql = "INSERT INTO domande (titolo, corpo, dottore, specializzazione_filtro, anni_exp_filtro, ospedale_filtro, data_domanda)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())";
+    $ins = $connessione->prepare($sql);
+    $ins->execute([$titolo, $corpo, $_SESSION['utente'], $spec, $exp, $osp]);
+  }
+  header("Location: home.php");
+  exit();
+}
+
+// ── Fetch selects per il modale ──
+$sql_spec = "SELECT codice, nome FROM specializzazioni ORDER BY nome";
+$stmt_spec = $connessione->prepare($sql_spec);
+$stmt_spec->execute();
+$elenco_spec = $stmt_spec->fetchAll(PDO::FETCH_ASSOC);
+
+$sql_osp = "SELECT id_ospedale, nome, citta FROM ospedali ORDER BY nome";
+$stmt_osp = $connessione->prepare($sql_osp);
+$stmt_osp->execute();
+$elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
 
 <!DOCTYPE html>
 <html lang="it">
@@ -611,7 +634,6 @@ if (!$accesso_riuscito) {
       display: flex;
       flex-direction: column;
       gap: 16px;
-      max-height: calc(100vh - 100px);
       overflow-y: auto;
       scrollbar-width: none
     }
@@ -1578,7 +1600,8 @@ if (!$accesso_riuscito) {
       box-shadow: 0 6px 28px rgba(15, 159, 142, .4);
       transition: all .2s;
       z-index: 100;
-      font-family: 'DM Sans', sans-serif
+      font-family: 'DM Sans', sans-serif;
+      border-color: lightseagreen;
     }
 
     .fab:hover {
@@ -1758,7 +1781,7 @@ if (!$accesso_riuscito) {
         grid-template-columns: 230px 1fr
       }
 
-      .sidebar-right {
+      .sidebar-left {
         display: none
       }
     }
@@ -1769,7 +1792,7 @@ if (!$accesso_riuscito) {
         padding: 16px 14px 90px
       }
 
-      .sidebar-left {
+      .sidebar-right {
         display: none
       }
 
@@ -1803,6 +1826,167 @@ if (!$accesso_riuscito) {
         font-size: 13px
       }
     }
+
+    /* ══════════ MODALE NUOVA DISCUSSIONE ══════════ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(13, 31, 60, .55);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s ease
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all
+    }
+
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -46%) scale(.96);
+      z-index: 1001;
+      width: min(600px, 94vw);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: var(--white);
+      border-radius: 22px;
+      box-shadow: 0 32px 80px rgba(13, 31, 60, .22);
+      border: 1px solid var(--border);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .28s ease, transform .28s cubic-bezier(.34, 1.56, .64, 1)
+    }
+
+    .modal.open {
+      opacity: 1;
+      pointer-events: all;
+      transform: translate(-50%, -50%) scale(1)
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 26px 18px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .modal-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      color: var(--navy)
+    }
+
+    .modal-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+      line-height: 1
+    }
+
+    .modal-close:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #dc2626
+    }
+
+    .modal-body {
+      padding: 22px 26px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px
+    }
+
+    .modal-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    .modal-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      color: var(--muted)
+    }
+
+    .modal-input,
+    .modal-textarea,
+    .modal-select {
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--navy);
+      background: var(--bg);
+      outline: none;
+      transition: all .2s;
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none
+    }
+
+    .modal-input:focus,
+    .modal-textarea:focus,
+    .modal-select:focus {
+      border-color: var(--teal);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(15, 159, 142, .08)
+    }
+
+    .modal-textarea {
+      resize: vertical;
+      min-height: 120px;
+      line-height: 1.6
+    }
+
+    .modal-filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px
+    }
+
+    .modal-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .modal-submit {
+      padding: 14px;
+      background: linear-gradient(135deg, var(--teal), var(--teal2));
+      color: #fff;
+      border: none;
+      border-radius: 13px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(15, 159, 142, .25);
+      transition: all .2s;
+      margin-top: 4px
+    }
+
+    .modal-submit:hover {
+      opacity: .9;
+      transform: translateY(-1px)
+    }
   </style>
 </head>
 
@@ -1827,7 +2011,7 @@ if (!$accesso_riuscito) {
 
   <!-- ══ HEADER ══ -->
   <header style="display: flex; flex-wrap: wrap">
-    <a href="index.php" class="nav-logo">
+    <a href="login.php" class="nav-logo">
       <span class="cross">✚</span>
       MedicoForum
     </a>
@@ -2000,114 +2184,6 @@ if (!$accesso_riuscito) {
   <!-- ══ LAYOUT 3 COLONNE ══ -->
   <div class="page-wrapper">
 
-    <!-- ══ SIDEBAR SINISTRA ══ -->
-    <aside class="sidebar sidebar-left">
-
-      <!-- Profilo -->
-      <div class="profile-widget">
-        <div class="profile-card">
-          <div class="profile-cover"></div>
-          <div class="profile-info">
-            <?php
-
-            echo '<img src="img/' . $profilo["foto_profilo"] . '" class="big-avatar">
-                  <div class="pname">';
-            if ($profilo["sesso"] == 'm') {
-              echo 'Dr. ';
-            } else {
-              echo 'Dott.ssa ';
-            }
-            echo $profilo["nome"] . ' ' . $profilo["cognome"] . '</div>
-                <div class="pspec">' . $profilo["nomeS"] . ' · ' . $profilo["citta"] . '</div>';
-
-            ?>
-          </div>
-        </div>
-      </div>
-
-      <!-- Specializzazioni -->
-      <div class="widget">
-        <div class="widget-header">
-          <span class="widget-title"><span class="widget-title-icon">🏷️</span> Specializzazioni</span>
-          <a href="#" class="widget-link">Tutte →</a>
-        </div>
-        <div class="widget-body">
-          <ul class="spec-list">
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🫀</span> Cardiologia</span><span
-                  class="count-pill">48</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">👶</span> Pediatria</span><span
-                  class="count-pill">31</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🧠</span> Neurologia</span><span
-                  class="count-pill">27</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🩺</span> Med. Interna</span><span
-                  class="count-pill">22</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🦴</span> Ortopedia</span><span
-                  class="count-pill">15</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🔬</span> Oncologia</span><span
-                  class="count-pill">19</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🫁</span> Pneumologia</span><span
-                  class="count-pill">14</span></a></li>
-          </ul>
-        </div>
-      </div>
-
-    </aside>
-
-    <!-- ══ FEED CENTRALE ══ -->
-    <main>
-
-      <div class="feed-header">
-        <div class="feed-title-group">
-          <div class="feed-label">Community</div>
-          <div class="feed-title">Discussioni recenti</div>
-        </div>
-      </div>
-
-      <!-- POST -->
-      <?php
-      $sql = "SELECT titolo, domande.corpo, d.nome AS nomeD, cognome, sesso, foto_profilo, s.nome AS nomeS, COUNT(*) AS nRisposte FROM domande, dottori AS d, specializzazioni AS s, risposte WHERE (domande.dottore=id_dottore) AND (specializzazione=codice) AND (domanda=id_domanda) GROUP BY id_domanda";
-      $post = $connessione->prepare($sql);
-      $post->execute();
-
-      if ($post->rowCount() > 0) {
-        while ($postSingolo = $post->fetch(PDO::FETCH_ASSOC)) {
-          echo '<article class="question-card">
-            <div class="card-top">
-              <div class="author-row">
-                <img src="img/' . $postSingolo["foto_profilo"] . '" class="author-avatar a3">
-                <div>
-                  <div class="author-name">';
-          if ($postSingolo["sesso"] == 'm') {
-            echo 'Dr. ';
-          } else {
-            echo 'Dott.ssa ';
-          }
-          echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '</div>
-                  <div class="author-meta"><span>' . $postSingolo["nomeS"] . '</span></div>
-                </div>
-              </div>
-              <div class="card-tags"><span class="spec-tag">FILTRO DA AGGIUNGERE</span></div>
-            </div>
-            <h2 class="question-title">' . $postSingolo["titolo"] . '</h2>
-            <p class="question-preview">' . $postSingolo["corpo"] . '</p>
-            <div class="card-footer">
-              <div class="card-actions">
-                <button class="card-action">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  ' . $postSingolo["nRisposte"] . ' risposte
-                </button>
-              </div>
-              <a href="#" class="read-more">Leggi tutto →</a>
-            </div>
-          </article>';
-        }
-      }
-      ?>
-
-    </main>
-
     <!-- ══ SIDEBAR DESTRA ══ -->
     <aside class="sidebar sidebar-right">
 
@@ -2140,12 +2216,12 @@ if (!$accesso_riuscito) {
               </div><span class="trend-count">98 post</span>
             </div>
             <div class="trend-item">
-              <div class="trend-left"><span class="trend-rank">3</span><span class="trend-name">#DOAC</span></div><span
-                class="trend-count">87 post</span>
+              <div class="trend-left"><span class="trend-rank">3</span><span class="trend-name">#DOAC</span></div>
+              <span class="trend-count">87 post</span>
             </div>
             <div class="trend-item">
-              <div class="trend-left"><span class="trend-rank">4</span><span class="trend-name">#HER2</span></div><span
-                class="trend-count">74 post</span>
+              <div class="trend-left"><span class="trend-rank">4</span><span class="trend-name">#HER2</span></div>
+              <span class="trend-count">74 post</span>
             </div>
             <div class="trend-item">
               <div class="trend-left"><span class="trend-rank">5</span><span class="trend-name">#Bronchiolite</span>
@@ -2202,13 +2278,222 @@ if (!$accesso_riuscito) {
 
     </aside>
 
+    <!-- ══ FEED CENTRALE ══ -->
+    <main>
+
+      <div class="feed-header">
+        <div class="feed-title-group">
+          <div class="feed-label">Community</div>
+          <div class="feed-title">Discussioni recenti</div>
+        </div>
+      </div>
+
+      <!-- POST -->
+      <?php
+      $sql = "SELECT id_domanda, titolo, domande.corpo, d.nome AS nomeD, cognome, sesso, foto_profilo, s.nome AS nomeS, COUNT(id_risposta) AS nRisposte, specializzazione_filtro, anni_exp_filtro, ospedale_filtro
+              FROM domande
+              INNER JOIN dottori AS d ON domande.dottore = d.id_dottore
+              INNER JOIN specializzazioni AS s ON d.specializzazione = s.codice
+              LEFT JOIN risposte ON domande.id_domanda = risposte.domanda
+              GROUP BY id_domanda";
+      $post = $connessione->prepare($sql);
+      $post->execute();
+
+      if ($post->rowCount() > 0) {
+        while ($postSingolo = $post->fetch(PDO::FETCH_ASSOC)) {
+          echo '<article class="question-card">
+            <div class="card-top">
+              <div class="author-row">
+                <img src="img/' . $postSingolo["foto_profilo"] . '" class="author-avatar a3">
+                <div>
+                  <div class="author-name">';
+          if ($postSingolo["sesso"] == 'm') {
+            echo 'Dr. ';
+          } else {
+            echo 'Dott.ssa ';
+          }
+          echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '</div>
+                  <div class="author-meta"><span>' . $postSingolo["nomeS"] . '</span></div>
+                </div>
+              </div>
+              <div class="card-tags">';
+          $filtri = false;
+          if (!empty($postSingolo['specializzazione_filtro'])) {
+            $sql = "SELECT nome
+              FROM specializzazioni
+              WHERE codice = ?";
+            $specializzazione = $connessione->prepare($sql);
+            $specializzazione->execute([$postSingolo['specializzazione_filtro']]);
+            $specializzazione = $specializzazione->fetch(\PDO::FETCH_ASSOC);
+            echo '<span class="spec-tag">' . $specializzazione['nome'] . '</span>';
+            $filtri = true;
+          }
+          if (!empty($postSingolo['anni_exp_filtro'])) {
+            echo '<span class="spec-tag">' . $postSingolo['anni_exp_filtro'] . ' anni</span>';
+            $filtri = true;
+          }
+          if (!empty($postSingolo['ospedale_filtro'])) {
+            $sql = "SELECT nome
+              FROM ospedali
+              WHERE id_ospedale = ?";
+            $ospedale = $connessione->prepare($sql);
+            $ospedale->execute([$postSingolo['ospedale_filtro']]);
+            $ospedale = $ospedale->fetch(\PDO::FETCH_ASSOC);
+            echo '<span class="spec-tag">' . $ospedale['nome'] . '</span>';
+            $filtri = true;
+          }
+
+          if (!$filtri) {
+            echo '<span class="spec-tag">Non sono presenti filtri</span>';
+          }
+
+          echo '</div>
+            </div>
+            <h2 class="question-title">' . $postSingolo["titolo"] . '</h2>
+            <p class="question-preview">' . $postSingolo["corpo"] . '</p>
+            <div class="card-footer">
+              <div class="card-actions">
+                <button class="card-action">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  ' . $postSingolo["nRisposte"] . ' risposte
+                </button>
+              </div>
+              <a href="discussione.php?id=' . $postSingolo["id_domanda"] . '" class="read-more">Leggi tutto →</a>
+            </div>
+          </article>';
+        }
+      }
+      ?>
+
+    </main>
+
+    <!-- ══ SIDEBAR SINISTRA ══ -->
+    <aside class="sidebar sidebar-left">
+
+      <!-- Profilo -->
+      <div class="profile-widget">
+        <div class="profile-card">
+          <div class="profile-cover"></div>
+          <div class="profile-info">
+            <?php
+
+            echo '<img src="img/' . $profilo["foto_profilo"] . '" class="big-avatar">
+            <div class="pname">';
+            if ($profilo["sesso"] == 'm') {
+              echo 'Dr. ';
+            } else {
+              echo 'Dott.ssa ';
+            }
+            echo $profilo["nome"] . ' ' . $profilo["cognome"] . '</div>
+          <div class="pspec">' . $profilo["nomeS"] . ' · ' . $profilo["citta"] . '</div>';
+
+            ?>
+          </div>
+        </div>
+      </div>
+
+      <!-- Specializzazioni -->
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title"><span class="widget-title-icon">🏷️</span> Specializzazioni</span>
+          <a href="#" class="widget-link">Tutte →</a>
+        </div>
+        <div class="widget-body">
+          <ul class="spec-list">
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🫀</span> Cardiologia</span><span
+                  class="count-pill">48</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">👶</span> Pediatria</span><span
+                  class="count-pill">31</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🧠</span> Neurologia</span><span
+                  class="count-pill">27</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🩺</span> Med. Interna</span><span
+                  class="count-pill">22</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🦴</span> Ortopedia</span><span
+                  class="count-pill">15</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🔬</span> Oncologia</span><span
+                  class="count-pill">19</span></a></li>
+            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🫁</span> Pneumologia</span><span
+                  class="count-pill">14</span></a></li>
+          </ul>
+        </div>
+      </div>
+
+    </aside>
+
   </div>
 
   <!-- ══ FAB ══ -->
-  <a href="/nuova-domanda" class="fab">
+  <button id="fabNuovaDisc" class="fab">
     <span class="fab-plus">+</span>
     Nuova discussione
-  </a>
+  </button>
+
+  <!-- ══ MODALE NUOVA DISCUSSIONE ══ -->
+  <div class="modal-overlay" id="modalOverlay"></div>
+  <div class="modal" id="modalNuovaDisc" role="dialog" aria-modal="true" aria-labelledby="modalTitleLabel">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitleLabel">✍️ Nuova discussione</div>
+      <button class="modal-close" id="closeModal" aria-label="Chiudi">✕</button>
+    </div>
+    <form method="POST" action="home.php">
+      <input type="hidden" name="action" value="nuova_discussione">
+      <div class="modal-body">
+
+        <div class="modal-field">
+          <label class="modal-label" for="nd_titolo">Titolo *</label>
+          <input class="modal-input" id="nd_titolo" name="titolo" type="text"
+            placeholder="Es. Gestione empirica di polmonite atipica in anziano…" required maxlength="255">
+        </div>
+
+        <div class="modal-field">
+          <label class="modal-label" for="nd_corpo">Corpo del post *</label>
+          <textarea class="modal-textarea" id="nd_corpo" name="corpo"
+            placeholder="Descrivi il caso, la domanda o la riflessione che vuoi condividere con i tuoi colleghi…"
+            required></textarea>
+        </div>
+
+        <div class="modal-field">
+          <div class="modal-label" style="margin-bottom:4px">Filtri <span class="modal-hint">(opzionali)</span></div>
+          <div class="modal-filters">
+
+            <div class="modal-field">
+              <label class="modal-label" for="nd_spec">Specializzazione</label>
+              <select class="modal-select" id="nd_spec" name="specializzazione">
+                <option value="">Tutte</option>
+                <?php foreach ($elenco_spec as $s): ?>
+                  <option value="<?= htmlspecialchars($s['codice']) ?>"><?= htmlspecialchars($s['nome']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label" for="nd_exp">Anni di esperienza</label>
+              <input class="modal-input" id="nd_exp" name="anni_exp" type="number" min="0" max="60"
+                placeholder="es. 10">
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label" for="nd_osp">Ospedale / Città</label>
+              <select class="modal-select" id="nd_osp" name="ospedale">
+                <option value="">Tutti</option>
+                <?php foreach ($elenco_osp as $o): ?>
+                  <option value="<?= htmlspecialchars($o['id_ospedale']) ?>">
+                    <?= htmlspecialchars($o['nome'] . ' — ' . $o['citta']) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        <button type="submit" class="modal-submit">Pubblica discussione →</button>
+
+      </div>
+    </form>
+  </div>
 
   <!-- ══ FILTER DRAWER ══ -->
   <div class="overlay" id="overlay"></div>
@@ -2309,6 +2594,27 @@ if (!$accesso_riuscito) {
         });
       });
     });
+
+    // ── Modal Nuova Discussione ──
+    const fabBtn = document.getElementById('fabNuovaDisc');
+    const modal = document.getElementById('modalNuovaDisc');
+    const closeModal = document.getElementById('closeModal');
+    const modalOverlay = document.getElementById('modalOverlay');
+
+    fabBtn.addEventListener('click', () => {
+      modal.classList.add('open');
+      modalOverlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    });
+
+    function chiudiModal() {
+      modal.classList.remove('open');
+      modalOverlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    closeModal.addEventListener('click', chiudiModal);
+    modalOverlay.addEventListener('click', chiudiModal);
 
     // ── Like toggle ──
     document.querySelectorAll('.card-action').forEach(btn => {

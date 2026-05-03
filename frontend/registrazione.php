@@ -1,27 +1,46 @@
- 
+<?php
+require_once 'database.php'; // includo il file di configurazione
+try {
+    $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
+    $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Errore nella gestione del database $db: " . $e->getMessage());
+}
+?>
+
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrati — MedicoForum</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --bg:        #f0f4f8;
-            --bg2:       #ffffff;
-            --white:     #ffffff;
-            --navy:      #0d1f3c;
-            --teal:      #0f9f8e;
-            --teal2:     #0b8070;
-            --teal-glow: rgba(15,159,142,0.12);
-            --muted:     #6b82a0;
-            --border:    #dde5ef;
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        html, body {
+        :root {
+            --bg: #f0f4f8;
+            --bg2: #ffffff;
+            --white: #ffffff;
+            --navy: #0d1f3c;
+            --teal: #0f9f8e;
+            --teal2: #0b8070;
+            --teal-glow: rgba(15, 159, 142, 0.12);
+            --muted: #6b82a0;
+            --border: #dde5ef;
+        }
+
+        html,
+        body {
             min-height: 100%;
             background: var(--bg);
             color: var(--navy);
@@ -50,12 +69,19 @@
             flex: 1;
             position: relative;
             overflow: hidden;
-            animation: revealLeft 1s cubic-bezier(0.16,1,0.3,1) both;
+            animation: revealLeft 1s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
         @keyframes revealLeft {
-            from { opacity: 0; transform: translateX(-24px); }
-            to   { opacity: 1; transform: translateX(0); }
+            from {
+                opacity: 0;
+                transform: translateX(-24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         .visual-bg {
@@ -66,16 +92,18 @@
             transition: transform 12s ease-in-out;
         }
 
-        .visual-bg.zoomed { transform: scale(1); }
+        .visual-bg.zoomed {
+            transform: scale(1);
+        }
 
         /* Multi-layer overlay */
         .visual-overlay {
             position: absolute;
             inset: 0;
             background:
-                linear-gradient(to right, rgba(13,31,60,0.25) 0%, transparent 55%),
-                linear-gradient(to top, rgba(13,31,60,0.92) 0%, rgba(13,31,60,0.35) 40%, transparent 65%),
-                linear-gradient(135deg, rgba(13,31,60,0.5) 0%, rgba(15,159,142,0.08) 100%);
+                linear-gradient(to right, rgba(13, 31, 60, 0.25) 0%, transparent 55%),
+                linear-gradient(to top, rgba(13, 31, 60, 0.92) 0%, rgba(13, 31, 60, 0.35) 40%, transparent 65%),
+                linear-gradient(135deg, rgba(13, 31, 60, 0.5) 0%, rgba(15, 159, 142, 0.08) 100%);
         }
 
         /* Slide dots */
@@ -93,7 +121,7 @@
         .dot {
             width: 3px;
             height: 20px;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             border-radius: 100px;
             cursor: pointer;
             transition: all 0.4s ease;
@@ -102,13 +130,15 @@
         .dot.active {
             background: var(--teal);
             height: 36px;
-            box-shadow: 0 0 12px rgba(15,159,142,0.5);
+            box-shadow: 0 0 12px rgba(15, 159, 142, 0.5);
         }
 
         /* Content in basso */
         .visual-content {
             position: absolute;
-            bottom: 0; left: 0; right: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
             z-index: 3;
             padding: 56px;
         }
@@ -117,8 +147,8 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: rgba(15,159,142,0.15);
-            border: 1px solid rgba(15,159,142,0.35);
+            background: rgba(15, 159, 142, 0.15);
+            border: 1px solid rgba(15, 159, 142, 0.35);
             border-radius: 100px;
             padding: 8px 18px;
             font-size: 12px;
@@ -132,15 +162,25 @@
 
         .visual-tag::before {
             content: '';
-            width: 6px; height: 6px;
+            width: 6px;
+            height: 6px;
             background: #5dd8cc;
             border-radius: 50%;
             animation: pulse 2s ease-in-out infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.5; transform: scale(1.5); }
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.5);
+            }
         }
 
         .visual-headline {
@@ -159,7 +199,7 @@
 
         .visual-desc {
             font-size: 15px;
-            color: rgba(255,255,255,0.5);
+            color: rgba(255, 255, 255, 0.5);
             line-height: 1.7;
             max-width: 340px;
             font-weight: 300;
@@ -177,7 +217,7 @@
             display: flex;
             align-items: center;
             gap: 14px;
-            color: rgba(255,255,255,0.75);
+            color: rgba(255, 255, 255, 0.75);
             font-size: 14px;
             font-weight: 400;
         }
@@ -185,8 +225,8 @@
         .benefit-icon {
             width: 34px;
             height: 34px;
-            background: rgba(15,159,142,0.18);
-            border: 1px solid rgba(15,159,142,0.3);
+            background: rgba(15, 159, 142, 0.18);
+            border: 1px solid rgba(15, 159, 142, 0.3);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -209,21 +249,30 @@
             padding: 0 56px 48px;
             position: relative;
             overflow-y: auto;
-            animation: revealRight 1s cubic-bezier(0.16,1,0.3,1) 0.15s both;
+            animation: revealRight 1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
         }
 
         @keyframes revealRight {
-            from { opacity: 0; transform: translateX(24px); }
-            to   { opacity: 1; transform: translateX(0); }
+            from {
+                opacity: 0;
+                transform: translateX(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         /* Ambient glows */
         .auth-form-side::before {
             content: '';
             position: fixed;
-            top: -100px; right: -60px;
-            width: 320px; height: 320px;
-            background: radial-gradient(circle, rgba(15,159,142,0.06) 0%, transparent 70%);
+            top: -100px;
+            right: -60px;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(15, 159, 142, 0.06) 0%, transparent 70%);
             pointer-events: none;
         }
 
@@ -245,7 +294,8 @@
         }
 
         .logo-mark {
-            width: 40px; height: 40px;
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, var(--teal) 0%, var(--teal2) 100%);
             border-radius: 12px;
             display: flex;
@@ -253,7 +303,7 @@
             justify-content: center;
             font-size: 20px;
             color: #ffffff;
-            box-shadow: 0 8px 24px rgba(15,159,142,0.2);
+            box-shadow: 0 8px 24px rgba(15, 159, 142, 0.2);
         }
 
         .logo-text {
@@ -318,11 +368,17 @@
             transition: color 0.3s;
         }
 
-        .step.active { color: var(--teal); }
-        .step.done   { color: var(--teal); }
+        .step.active {
+            color: var(--teal);
+        }
+
+        .step.done {
+            color: var(--teal);
+        }
 
         .step-num {
-            width: 26px; height: 26px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
             background: var(--bg);
             border: 1.5px solid var(--border);
@@ -339,7 +395,7 @@
             background: var(--teal);
             border-color: var(--teal);
             color: #fff;
-            box-shadow: 0 4px 12px rgba(15,159,142,0.25);
+            box-shadow: 0 4px 12px rgba(15, 159, 142, 0.25);
         }
 
         .step.done .step-num {
@@ -356,7 +412,9 @@
             transition: background 0.3s;
         }
 
-        .step-line.done { background: var(--teal); }
+        .step-line.done {
+            background: var(--teal);
+        }
 
         /* ── Form panels ── */
         .form-panel {
@@ -365,12 +423,19 @@
 
         .form-panel.active {
             display: block;
-            animation: panelIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+            animation: panelIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
         @keyframes panelIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* ── Fields ── */
@@ -426,13 +491,16 @@
             appearance: none;
         }
 
-        input:focus, select:focus {
+        input:focus,
+        select:focus {
             background: var(--white);
             border-color: var(--teal);
-            box-shadow: 0 0 0 4px rgba(15,159,142,0.08);
+            box-shadow: 0 0 0 4px rgba(15, 159, 142, 0.08);
         }
 
-        input::placeholder { color: #b0c0d4; }
+        input::placeholder {
+            color: #b0c0d4;
+        }
 
         .input-hint {
             font-size: 11px;
@@ -456,9 +524,17 @@
             transition: background 0.3s;
         }
 
-        .pwd-bar.weak   { background: #f87171; }
-        .pwd-bar.medium { background: #fbbf24; }
-        .pwd-bar.strong { background: var(--teal); }
+        .pwd-bar.weak {
+            background: #f87171;
+        }
+
+        .pwd-bar.medium {
+            background: #fbbf24;
+        }
+
+        .pwd-bar.strong {
+            background: var(--teal);
+        }
 
         .pwd-label {
             font-size: 11px;
@@ -467,7 +543,10 @@
         }
 
         /* select arrow */
-        .select-wrap { position: relative; }
+        .select-wrap {
+            position: relative;
+        }
+
         .select-wrap::after {
             content: '▾';
             position: absolute;
@@ -495,11 +574,12 @@
 
         .check-group:has(input:checked) {
             border-color: var(--teal);
-            background: rgba(15,159,142,0.04);
+            background: rgba(15, 159, 142, 0.04);
         }
 
         .check-group input[type="checkbox"] {
-            width: 18px; height: 18px;
+            width: 18px;
+            height: 18px;
             flex-shrink: 0;
             padding: 0;
             margin-top: 1px;
@@ -559,7 +639,7 @@
             font-size: 15px;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 6px 20px rgba(15,159,142,0.2);
+            box-shadow: 0 6px 20px rgba(15, 159, 142, 0.2);
             position: relative;
             overflow: hidden;
         }
@@ -569,13 +649,13 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 60%);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 60%);
         }
 
         .btn-next:hover,
         .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(15,159,142,0.3);
+            box-shadow: 0 12px 28px rgba(15, 159, 142, 0.3);
         }
 
         /* ── Footer ── */
@@ -594,7 +674,9 @@
             transition: color 0.2s;
         }
 
-        .card-footer a:hover { color: var(--teal2); }
+        .card-footer a:hover {
+            color: var(--teal2);
+        }
 
         /* Security note */
         .security-note {
@@ -610,335 +692,522 @@
         }
 
         /* ── Stagger animations ── */
-        .form-inner > * {
-            animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+        .form-inner>* {
+            animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
-        .logo        { animation-delay: 0.3s; }
-        .form-header { animation-delay: 0.38s; }
-        .steps       { animation-delay: 0.44s; }
-        .form-panel  { animation-delay: 0.5s; }
+        .logo {
+            animation-delay: 0.3s;
+        }
+
+        .form-header {
+            animation-delay: 0.38s;
+        }
+
+        .steps {
+            animation-delay: 0.44s;
+        }
+
+        .form-panel {
+            animation-delay: 0.5s;
+        }
 
         @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* ── RESPONSIVE ── */
         @media (max-width: 1000px) {
-            .auth-visual-side { display: none; }
-            .auth-form-side { width: 100%; padding: 0 32px 48px; }
+            .auth-visual-side {
+                display: none;
+            }
+
+            .auth-form-side {
+                width: 100%;
+                padding: 0 32px 48px;
+            }
         }
 
         @media (max-width: 500px) {
-            .form-row { grid-template-columns: 1fr; }
-            .auth-form-side { padding: 0 20px 40px; }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .auth-form-side {
+                padding: 0 20px 40px;
+            }
+        }
+
+        /* Nasconde VISIVAMENTE l'icona ma mantiene la funzionalità */
+        .input-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+            opacity: 0;
+            position: absolute;
+            right: 12px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .input-wrap:has(input[type="date"]) {
+            display: flex;
+            align-items: center;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+
+        .input-wrap:has(input[type="date"]):focus-within {
+            border-color: #6c63ff;
+            box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
+        }
+
+        .input-wrap input[type="date"] {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 14px;
+            color: inherit;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .input-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+            opacity: 1;
+            cursor: pointer;
+            font-size: 16px;
+            filter: invert(40%);
+            /* grigio neutro, cambia a gusto */
+        }
+
+        .foto-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+
+        .foto-wrap:focus-within {
+            border-color: #6c63ff;
+            box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
+        }
+
+        .foto-label {
+            flex: 1;
+            font-size: 14px;
+            color: #111010;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .foto-btn {
+            background: #86868b;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .foto-btn:hover {
+            background: #7bdee1;
         }
     </style>
 </head>
+
 <body>
 
-<div class="auth-wrapper">
+    <div class="auth-wrapper">
 
-    <!-- ════ SINISTRA: VISUAL ════ -->
-    <div class="auth-visual-side">
-        <div class="visual-bg" id="visualBg"></div>
-        <div class="visual-overlay"></div>
+        <!-- ════ SINISTRA: VISUAL ════ -->
+        <div class="auth-visual-side">
+            <div class="visual-bg" id="visualBg"></div>
+            <div class="visual-overlay"></div>
 
-        <div class="slide-dots">
-            <div class="dot active"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-        </div>
+            <div class="slide-dots">
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
 
-        <div class="visual-content">
-            <div class="visual-tag">Registrazione gratuita</div>
-            <h2 class="visual-headline">
-                Entra nella<br><em>community</em><br>dei medici italiani
-            </h2>
-            <p class="visual-desc">
-                Accedi a casi clinici rari, confrontati con specialisti e tieniti aggiornato in un ambiente verificato e sicuro.
-            </p>
-            <div class="benefits">
-                <div class="benefit-item">
-                    <div class="benefit-icon">🔬</div>
-                    Casi clinici e discussioni specialistiche
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-icon">🤝</div>
-                    Networking con 14.800+ colleghi
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-icon">📚</div>
-                    ECM e aggiornamenti in tempo reale
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-icon">🔒</div>
-                    Ambiente esclusivo con verifica FNOMCeO
+            <div class="visual-content">
+                <div class="visual-tag">Registrazione gratuita</div>
+                <h2 class="visual-headline">
+                    Entra nella<br><em>community</em><br>dei medici italiani
+                </h2>
+                <p class="visual-desc">
+                    Accedi a casi clinici rari, confrontati con specialisti e tieniti aggiornato in un ambiente
+                    verificato e sicuro.
+                </p>
+                <div class="benefits">
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🔬</div>
+                        Casi clinici e discussioni specialistiche
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🤝</div>
+                        Networking con 14.800+ colleghi
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">📚</div>
+                        ECM e aggiornamenti in tempo reale
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-icon">🔒</div>
+                        Ambiente esclusivo con verifica FNOMCeO
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- ════ DESTRA: FORM ════ -->
-    <div class="auth-form-side">
-        <div class="form-inner">
+        <!-- ════ DESTRA: FORM ════ -->
+        <div class="auth-form-side">
+            <div class="form-inner">
 
-            <a href="index.html" class="logo">
-                <div class="logo-mark">✚</div>
-                <div class="logo-text">MedicoForum</div>
-            </a>
+                <a href="index.html" class="logo">
+                    <div class="logo-mark">✚</div>
+                    <div class="logo-text">MedicoForum</div>
+                </a>
 
-            <div class="form-header">
-                <p class="form-eyebrow">Iscrizione gratuita</p>
-                <h1 class="form-title">Unisciti a<br><em>MedicoForum</em></h1>
-                <p class="form-sub">Crea il tuo account verificato in pochi minuti.</p>
-            </div>
-
-            <!-- Step indicator -->
-            <div class="steps">
-                <div class="step active" id="s1" onclick="goStep(1)">
-                    <div class="step-num">1</div>
-                    Dati personali
+                <div class="form-header">
+                    <p class="form-eyebrow">Iscrizione gratuita</p>
+                    <h1 class="form-title">Unisciti a<br><em>MedicoForum</em></h1>
+                    <p class="form-sub">Crea il tuo account verificato in pochi minuti.</p>
                 </div>
-                <div class="step-line" id="line1"></div>
-                <div class="step" id="s2" onclick="goStep(2)">
-                    <div class="step-num">2</div>
-                    Professione
+
+                <!-- Step indicator -->
+                <div class="steps">
+                    <div class="step active" id="s1" onclick="goStep(1)">
+                        <div class="step-num">1</div>
+                        Dati personali
+                    </div>
+                    <div class="step-line" id="line1"></div>
+                    <div class="step" id="s2" onclick="goStep(2)">
+                        <div class="step-num">2</div>
+                        Professione
+                    </div>
+                    <div class="step-line" id="line2"></div>
+                    <div class="step" id="s3" onclick="goStep(3)">
+                        <div class="step-num">3</div>
+                        Sicurezza
+                    </div>
                 </div>
-                <div class="step-line" id="line2"></div>
-                <div class="step" id="s3" onclick="goStep(3)">
-                    <div class="step-num">3</div>
-                    Sicurezza
-                </div>
-            </div>
 
-            <form action="registrazione_process.php" method="POST" id="regForm">
+                <form action="Registrazione_process.php" method="POST" id="regForm" enctype="multipart/form-data">
 
-                <!-- ─ STEP 1: Dati personali ─ -->
-                <div class="form-panel active" id="panel1">
+                    <!-- ─ STEP 1: Dati personali ─ -->
+                    <div class="form-panel active" id="panel1">
 
-                    <div class="form-row">
-                        <div class="field">
-                            <label for="nome">Nome</label>
-                            <div class="input-wrap">
-                                <span class="input-icon">👤</span>
-                                <input type="text" id="nome" name="nome" placeholder="Mario" required>
+                        <div class="form-row">
+                            <div class="field">
+                                <label for="nome">Nome</label>
+                                <div class="input-wrap">
+                                    <span class="input-icon">👤</span>
+                                    <input type="text" id="nome" name="nome" placeholder="Mario" required>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label for="cognome">Cognome</label>
+                                <div class="input-wrap">
+                                    <span class="input-icon">👤</span>
+                                    <input type="text" id="cognome" name="cognome" placeholder="Rossi" required>
+                                </div>
                             </div>
                         </div>
+
                         <div class="field">
-                            <label for="cognome">Cognome</label>
-                            <div class="input-wrap">
-                                <span class="input-icon">👤</span>
-                                <input type="text" id="cognome" name="cognome" placeholder="Rossi" required>
+                            <label for="sesso">Sesso</label>
+                            <div class="input-wrap select-wrap">
+                                <span class="input-icon">⚧️</span>
+                                <select id="sesso" name="sesso" required>
+                                    <option value="" disabled selected>Seleziona</option>
+                                    <option value="m">Uomo (m)</option>
+                                    <option value="f">Donna (f)</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="field">
-                        <label for="email">Indirizzo Email</label>
-                        <div class="input-wrap">
-                            <span class="input-icon">✉️</span>
-                            <input type="email" id="email" name="email" placeholder="mario.rossi@email.it" required>
+                        <div class="field">
+                            <label for="username">Username</label>
+                            <div class="input-wrap">
+                                <span class="input-icon">@</span>
+                                <input type="text" id="username" name="username" placeholder="es. m.rossi" required>
+                            </div>
+                            <p class="input-hint">Sarà il tuo identificativo nella community.</p>
+                        </div>
+
+                        <div class="btn-row">
+                            <button type="button" class="btn-next" onclick="nextStep(1)">Continua →</button>
                         </div>
                     </div>
 
-                    <div class="field">
-                        <label for="username">Username</label>
-                        <div class="input-wrap">
-                            <span class="input-icon">@</span>
-                            <input type="text" id="username" name="username" placeholder="es. m.rossi" required>
+                    <!-- ─ STEP 2: Professione ─ -->
+                    <div class="form-panel" id="panel2">
+
+
+                        <div class="field">
+                            <label for="foto">Foto Profilo (Opzionale)</label>
+                            <div class="input-wrap foto-wrap">
+                                <span class="foto-label" id="foto-label">Scegli un'immagine…</span>
+                                <button type="button" class="foto-btn"
+                                    onclick="document.getElementById('foto').click()">Sfoglia</button>
+                                <input type="file" id="foto" name="foto_profilo"
+                                    accept="image/jpeg, image/png, image/webp" style="display:none">
+                            </div>
                         </div>
-                        <p class="input-hint">Sarà il tuo identificativo nella community.</p>
+
+
+
+                        <div class="field">
+                            <label for="specialita">Specializzazione</label>
+                            <div class="input-wrap select-wrap">
+                                <span class="input-icon">🩺</span>
+                                <select id="specialita" name="specialita" required>
+                                    <option value="" disabled selected>Seleziona la tua specialità</option>
+
+                                    <?php
+
+                                    try {
+                                        $sql_spec = "SELECT codice, nome FROM specializzazioni ORDER BY nome ASC";
+
+                                        $stmt_spec = $connessione->query($sql_spec);
+
+                                        while ($spec = $stmt_spec->fetch(PDO::FETCH_ASSOC)) {
+                                            echo '<option value="' . htmlspecialchars($spec['codice']) . '">'
+                                                . htmlspecialchars($spec['nome']) .
+                                                '</option>';
+                                        }
+                                    } catch (PDOException $e) {
+
+                                        echo '<option value="" disabled>Errore caricamento specializzazioni</option>';
+                                    }
+                                    ?>
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label for="struttura">Struttura / Ospedale</label>
+                            <div class="input-wrap select-wrap">
+                                <span class="input-icon">🏛️</span>
+                                <select id="struttura" name="struttura" required>
+                                    <option value="" disabled selected>Seleziona il tuo ospedale</option>
+
+                                    <?php
+                                    try {
+
+                                        $sql_osp = "SELECT id_ospedale, nome FROM ospedali ORDER BY nome ASC";
+
+                                        $stmt_osp = $connessione->query($sql_osp);
+
+                                        while ($osp = $stmt_osp->fetch(PDO::FETCH_ASSOC)) {
+                                            echo '<option value="' . htmlspecialchars($osp['id_ospedale']) . '">'
+                                                . htmlspecialchars($osp['nome']) .
+                                                '</option>';
+                                        }
+                                    } catch (PDOException $e) {
+
+                                        echo '<option value="" disabled>Errore caricamento ospedali</option>';
+                                    }
+                                    ?>
+
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="field">
+                                <label for="data_nascita">Data di Nascita</label>
+                                <div class="input-wrap">
+
+                                    <input type="date" id="data_nascita" name="data_nascita" required>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="data_inizio_lavoro">Inizio Lavoro</label>
+                                <div class="input-wrap">
+
+                                    <input type="date" id="data_inizio_lavoro" name="data_inizio_lavoro" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="btn-row">
+                            <button type="button" class="btn-back" onclick="prevStep(2)">← Indietro</button>
+                            <button type="button" class="btn-next" onclick="nextStep(2)">Continua →</button>
+                        </div>
                     </div>
 
-                    <div class="btn-row">
-                        <button type="button" class="btn-next" onclick="nextStep(1)">Continua →</button>
+                    <!-- ─ STEP 3: Sicurezza ─ -->
+                    <div class="form-panel" id="panel3">
+
+                        <div class="field">
+                            <label for="password">Password</label>
+                            <div class="input-wrap">
+                                <span class="input-icon">🔑</span>
+                                <input type="password" id="password" name="password"
+                                    placeholder="Crea una password sicura" required oninput="checkPwd(this.value)">
+                                <button type="button"
+                                    style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;"
+                                    id="togglePwd">👁</button>
+                            </div>
+                            <div class="pwd-strength">
+                                <div class="pwd-bar" id="bar1"></div>
+                                <div class="pwd-bar" id="bar2"></div>
+                                <div class="pwd-bar" id="bar3"></div>
+                                <div class="pwd-bar" id="bar4"></div>
+                            </div>
+                            <p class="pwd-label" id="pwdLabel">Minimo 8 caratteri, una maiuscola e un numero.</p>
+                        </div>
+
+                        <div class="field">
+                            <label for="conferma">Conferma Password</label>
+                            <div class="input-wrap">
+                                <span class="input-icon">🔑</span>
+                                <input type="password" id="conferma" name="conferma" placeholder="Ripeti la password"
+                                    required>
+                            </div>
+                        </div>
+
+                        <label class="check-group"
+                            style="text-transform:none;letter-spacing:0;font-weight:400;display:flex;">
+                            <input type="checkbox" name="privacy" required>
+                            <span class="check-text">Accetto i <a href="#">Termini di Servizio</a> e la <a
+                                    href="#">Privacy Policy</a>. Confermo di essere un professionista sanitario
+                                registrato.</span>
+                        </label>
+
+                        <div class="btn-row">
+                            <button type="button" class="btn-back" onclick="prevStep(3)">← Indietro</button>
+                            <button type="submit" class="btn-submit">Crea account ✓</button>
+                        </div>
                     </div>
+
+                </form>
+
+                <div class="card-footer">
+                    Hai già un account? <a href="login.php">Accedi qui</a>
                 </div>
 
-                <!-- ─ STEP 2: Professione ─ -->
-                <div class="form-panel" id="panel2">
-
-                    <div class="field">
-                        <label for="ordine">N° Iscrizione Ordine (FNOMCeO)</label>
-                        <div class="input-wrap">
-                            <span class="input-icon">🏥</span>
-                            <input type="text" id="ordine" name="ordine" placeholder="Es. 12345 — Provincia" required>
-                        </div>
-                        <p class="input-hint">Necessario per la verifica come medico.</p>
-                    </div>
-
-                    <div class="field">
-                        <label for="specialita">Specializzazione</label>
-                        <div class="input-wrap select-wrap">
-                            <span class="input-icon">🩺</span>
-                            <select id="specialita" name="specialita">
-                                <option value="" disabled selected>Seleziona la tua specialità</option>
-                                <option>Medicina Generale</option>
-                                <option>Cardiologia</option>
-                                <option>Neurologia</option>
-                                <option>Oncologia</option>
-                                <option>Pediatria</option>
-                                <option>Chirurgia Generale</option>
-                                <option>Ginecologia</option>
-                                <option>Ortopedia</option>
-                                <option>Psichiatria</option>
-                                <option>Radiologia</option>
-                                <option>Altra specialità</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label for="struttura">Struttura / Ospedale</label>
-                        <div class="input-wrap">
-                            <span class="input-icon">🏛️</span>
-                            <input type="text" id="struttura" name="struttura" placeholder="Es. Ospedale Niguarda, Milano">
-                        </div>
-                    </div>
-
-                    <div class="btn-row">
-                        <button type="button" class="btn-back" onclick="prevStep(2)">← Indietro</button>
-                        <button type="button" class="btn-next" onclick="nextStep(2)">Continua →</button>
-                    </div>
+                <div class="security-note">
+                    <svg width="11" height="13" viewBox="0 0 12 14" fill="none">
+                        <path d="M6 1L1 3.5V7C1 9.76 3.24 12.22 6 13C8.76 12.22 11 9.76 11 7V3.5L6 1Z"
+                            stroke="currentColor" stroke-width="1.2" fill="none" />
+                    </svg>
+                    Dati protetti · Verifica FNOMCeO · GDPR compliant
                 </div>
 
-                <!-- ─ STEP 3: Sicurezza ─ -->
-                <div class="form-panel" id="panel3">
-
-                    <div class="field">
-                        <label for="password">Password</label>
-                        <div class="input-wrap">
-                            <span class="input-icon">🔑</span>
-                            <input type="password" id="password" name="password" placeholder="Crea una password sicura" required oninput="checkPwd(this.value)">
-                            <button type="button" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;" id="togglePwd">👁</button>
-                        </div>
-                        <div class="pwd-strength">
-                            <div class="pwd-bar" id="bar1"></div>
-                            <div class="pwd-bar" id="bar2"></div>
-                            <div class="pwd-bar" id="bar3"></div>
-                            <div class="pwd-bar" id="bar4"></div>
-                        </div>
-                        <p class="pwd-label" id="pwdLabel">Minimo 8 caratteri, una maiuscola e un numero.</p>
-                    </div>
-
-                    <div class="field">
-                        <label for="conferma">Conferma Password</label>
-                        <div class="input-wrap">
-                            <span class="input-icon">🔑</span>
-                            <input type="password" id="conferma" name="conferma" placeholder="Ripeti la password" required>
-                        </div>
-                    </div>
-
-                    <label class="check-group" style="text-transform:none;letter-spacing:0;font-weight:400;display:flex;">
-                        <input type="checkbox" name="privacy" required>
-                        <span class="check-text">Accetto i <a href="#">Termini di Servizio</a> e la <a href="#">Privacy Policy</a>. Confermo di essere un professionista sanitario registrato.</span>
-                    </label>
-
-                    <div class="btn-row">
-                        <button type="button" class="btn-back" onclick="prevStep(3)">← Indietro</button>
-                        <button type="submit" class="btn-submit">Crea account ✓</button>
-                    </div>
-                </div>
-
-            </form>
-
-            <div class="card-footer">
-                Hai già un account? <a href="login.php">Accedi qui</a>
             </div>
-
-            <div class="security-note">
-                <svg width="11" height="13" viewBox="0 0 12 14" fill="none">
-                    <path d="M6 1L1 3.5V7C1 9.76 3.24 12.22 6 13C8.76 12.22 11 9.76 11 7V3.5L6 1Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
-                </svg>
-                Dati protetti · Verifica FNOMCeO · GDPR compliant
-            </div>
-
         </div>
+
     </div>
 
-</div>
+    <script>
+        document.getElementById('foto').addEventListener('change', function() {
+            const label = document.getElementById('foto-label');
+            label.textContent = this.files[0] ? this.files[0].name : 'Scegli un\'immagine…';
+        });
+    </script>
 
-<script>
-    // ── Multi-step form ──
-    let currentStep = 1;
-    const totalSteps = 3;
+    <script>
+        // ── Multi-step form ──
+        let currentStep = 1;
+        const totalSteps = 3;
 
-    function goStep(n) {
-        if (n > currentStep) return; // Non si può saltare avanti
-        showStep(n);
-    }
+        function goStep(n) {
+            if (n > currentStep) return; // Non si può saltare avanti
+            showStep(n);
+        }
 
-    function nextStep(from) {
-        // Validazione base del pannello corrente
-        const panel = document.getElementById('panel' + from);
-        const inputs = panel.querySelectorAll('input[required], select[required]');
-        for (const inp of inputs) {
-            if (!inp.value.trim()) {
-                inp.focus();
-                inp.style.borderColor = '#f87171';
-                setTimeout(() => inp.style.borderColor = '', 1500);
-                return;
+        function nextStep(from) {
+            // Validazione base del pannello corrente
+            const panel = document.getElementById('panel' + from);
+            const inputs = panel.querySelectorAll('input[required], select[required]');
+            for (const inp of inputs) {
+                if (!inp.value.trim()) {
+                    inp.focus();
+                    inp.style.borderColor = '#f87171';
+                    setTimeout(() => inp.style.borderColor = '', 1500);
+                    return;
+                }
             }
-        }
-        if (from < totalSteps) showStep(from + 1);
-    }
-
-    function prevStep(from) {
-        if (from > 1) showStep(from - 1);
-    }
-
-    function showStep(n) {
-        // Nascondi tutti i pannelli
-        document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
-        document.getElementById('panel' + n).classList.add('active');
-
-        // Aggiorna step indicators
-        for (let i = 1; i <= totalSteps; i++) {
-            const s = document.getElementById('s' + i);
-            s.classList.remove('active', 'done');
-            if (i < n)  s.classList.add('done');
-            if (i === n) s.classList.add('active');
+            if (from < totalSteps) showStep(from + 1);
         }
 
-        // Aggiorna linee
-        for (let i = 1; i < totalSteps; i++) {
-            const line = document.getElementById('line' + i);
-            line.classList.toggle('done', i < n);
+        function prevStep(from) {
+            if (from > 1) showStep(from - 1);
         }
 
-        currentStep = n;
-    }
+        function showStep(n) {
+            // Nascondi tutti i pannelli
+            document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('panel' + n).classList.add('active');
 
-    // ── Password strength ──
-    function checkPwd(val) {
-        const bars   = [1,2,3,4].map(i => document.getElementById('bar' + i));
-        const label  = document.getElementById('pwdLabel');
-        const scores = [val.length >= 8, /[A-Z]/.test(val), /[0-9]/.test(val), /[^a-zA-Z0-9]/.test(val)];
-        const score  = scores.filter(Boolean).length;
-        const levels = ['','weak','weak','medium','strong'];
-        const labels = ['','Troppo corta','Debole','Discreta','Ottima! 🔒'];
+            // Aggiorna step indicators
+            for (let i = 1; i <= totalSteps; i++) {
+                const s = document.getElementById('s' + i);
+                s.classList.remove('active', 'done');
+                if (i < n) s.classList.add('done');
+                if (i === n) s.classList.add('active');
+            }
 
-        bars.forEach((b, i) => {
-            b.className = 'pwd-bar';
-            if (i < score) b.classList.add(levels[score]);
+            // Aggiorna linee
+            for (let i = 1; i < totalSteps; i++) {
+                const line = document.getElementById('line' + i);
+                line.classList.toggle('done', i < n);
+            }
+
+            currentStep = n;
+        }
+
+        // ── Password strength ──
+        function checkPwd(val) {
+            const bars = [1, 2, 3, 4].map(i => document.getElementById('bar' + i));
+            const label = document.getElementById('pwdLabel');
+            const scores = [val.length >= 8, /[A-Z]/.test(val), /[0-9]/.test(val), /[^a-zA-Z0-9]/.test(val)];
+            const score = scores.filter(Boolean).length;
+            const levels = ['', 'weak', 'weak', 'medium', 'strong'];
+            const labels = ['', 'Troppo corta', 'Debole', 'Discreta', 'Ottima! 🔒'];
+
+            bars.forEach((b, i) => {
+                b.className = 'pwd-bar';
+                if (i < score) b.classList.add(levels[score]);
+            });
+
+            label.textContent = val.length ? labels[score] : 'Minimo 8 caratteri, una maiuscola e un numero.';
+        }
+
+        // ── Toggle password ──
+        document.getElementById('togglePwd').addEventListener('click', function () {
+            const pwd = document.getElementById('password');
+            const show = pwd.type === 'password';
+            pwd.type = show ? 'text' : 'password';
+            this.textContent = show ? '🙈' : '👁';
         });
 
-        label.textContent = val.length ? labels[score] : 'Minimo 8 caratteri, una maiuscola e un numero.';
-    }
-
-    // ── Toggle password ──
-    document.getElementById('togglePwd').addEventListener('click', function () {
-        const pwd  = document.getElementById('password');
-        const show = pwd.type === 'password';
-        pwd.type  = show ? 'text' : 'password';
-        this.textContent = show ? '🙈' : '👁';
-    });
-
-    // ── Ken Burns effect sul visual ──
-    setTimeout(() => document.getElementById('visualBg').classList.add('zoomed'), 100);
-</script>
+        // ── Ken Burns effect sul visual ──
+        setTimeout(() => document.getElementById('visualBg').classList.add('zoomed'), 100);
+    </script>
 
 </body>
+
 </html>

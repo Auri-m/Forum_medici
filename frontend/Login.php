@@ -10,9 +10,19 @@
         die("Errore nella gestione del database $db: " . $e->getMessage () ); 
     }// catch
 
-    $_SESSION["accesso"] = true;
+    $errore = false;
+    if(isset($_SESSION["errore"]) && $_SESSION["errore"] == -1){
+        echo "<script>console.log('bah');</script>";
+        $errore = true;
+        session_unset();
+    }
 
-    
+    if (isset($_SESSION['utente']) || isset($_SESSION['accesso'])) {
+        echo "<script>console.log('cia siamo qua');</script>";
+        session_unset();
+    }
+        
+    echo "<script>console.log('che ne so');</script>";
 ?>
 
 <!DOCTYPE html>
@@ -599,7 +609,7 @@
         <div class="visual-content">
             <div class="visual-tag">Piattaforma verificata</div>
             <h2 class="visual-headline">
-                Dove la <em>medicina</em><br>incontra la comunità
+               Il network dei <em>professionisti</em> <br>della salute. 
             </h2>
             <p class="visual-desc">
                 Forum esclusivo per professionisti della salute. Casi clinici, ricerca e aggiornamenti in un ambiente riservato.
@@ -640,7 +650,7 @@
             </div>
 
             <?php
-                if(isset($_SESSION["errore"]) && $_SESSION["errore"] == -1){
+                if($errore){
                     echo '<div style="color: red; border: 2px solid red; background-color: white; border-radius: 15px; padding: 8px 15px; width: fit-content; margin: 10px 0; font-family: sans-serif; font-size: 14px;">';
                     echo 'ERRORE!!! Utente già registrato o username e password errati!';
                     echo '</div>';

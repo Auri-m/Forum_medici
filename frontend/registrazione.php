@@ -787,7 +787,6 @@ try {
             cursor: pointer;
             font-size: 16px;
             filter: invert(40%);
-            /* grigio neutro, cambia a gusto */
         }
 
         .foto-wrap {

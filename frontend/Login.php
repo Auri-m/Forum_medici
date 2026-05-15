@@ -9,7 +9,12 @@
     catch(PDOException $e){
         die("Errore nella gestione del database $db: " . $e->getMessage () ); 
     }// catch
-
+    
+    $registrazione = false;
+    if(isset($_SESSION["registrato"]) && $_SESSION["registrato"]==true){
+        $registrazione=true;
+        $_SESSION["registrato"]=false;
+    }
     $errore = false;
     if(isset($_SESSION["errore"]) && $_SESSION["errore"] == -1){
         echo "<script>console.log('bah');</script>";
@@ -651,14 +656,22 @@
 
             <?php
                 if($errore){
-                    echo '<div style="color: red; border: 2px solid red; background-color: white; border-radius: 15px; padding: 8px 15px; width: fit-content; margin: 10px 0; font-family: sans-serif; font-size: 14px;">';
+                    echo '<div style="color: #F74D4D; border: 2px solid #F74D4D; background-color: #FAF2F2; border-radius: 15px; padding: 8px 15px; width: fit-content; margin: 10px 0; font-family: sans-serif; font-size: 14px;">';
                     echo 'ERRORE!!! Utente già registrato o username e password errati!';
                     echo '</div>';
         
                     $_SESSION["errore"]=0;
                 }
             ?>
-
+            <?php
+                if($registrazione){
+                    echo '<div style="color: #14E33D; border: 2px solid #14E33D; background-color: #E6FFEB; border-radius: 15px; padding: 8px 15px; width: fit-content; margin: 10px 0; font-family: sans-serif; font-size: 14px;">';
+                    echo 'Utente registrato con successo ;)';
+                    echo '</div>';
+        
+                    $registrazione=false;
+                }
+            ?>
             <form action="home.php" method="post" autocomplete="off">
 
                 <div class="field">
@@ -677,9 +690,6 @@
                         <input type="password" id="password" name="password" placeholder="••••••••" required>
                         <button type="button" class="btn-eye" id="togglePwd" aria-label="Mostra password">👁</button>
                         <div class="input-focus-line"></div>
-                    </div>
-                    <div class="link-row">
-                        <a href="recupero_password.php" class="link">Password dimenticata?</a>
                     </div>
                 </div>
 

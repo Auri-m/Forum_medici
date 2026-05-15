@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1
+-- version 5.1.1
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Creato il: Mag 03, 2026 alle 19:37
--- Versione del server: 10.4.32-MariaDB
--- Versione PHP: 8.2.12
+-- Creato il: Mag 07, 2026 alle 10:54
+-- Versione del server: 10.4.21-MariaDB
+-- Versione PHP: 8.0.10
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -32,7 +32,7 @@ CREATE TABLE `credenziali` (
   `username` varchar(20) NOT NULL,
   `password` varchar(20) NOT NULL,
   `dottore` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dump dei dati per la tabella `credenziali`
@@ -90,7 +90,9 @@ INSERT INTO `credenziali` (`id_credenziali`, `username`, `password`, `dottore`) 
 (49, 'valerio.d\'amico', 'D\'Amico2026', 49),
 (50, 'veronica.ferrero', 'Ferrero2026', 50),
 (69, 'Torrte', '$2y$10$ABzCtfSTr/xDR', 59),
-(70, 'gg', '$2y$10$dnHccnUHEsLvM', 60);
+(70, 'gg', '$2y$10$dnHccnUHEsLvM', 60),
+(71, 'auriii', '$2y$10$LF./hJPP4FyBx', 61),
+(72, 'Gigione', '$2y$10$V/VaYBUXFC9VR', 62);
 
 -- --------------------------------------------------------
 
@@ -107,7 +109,7 @@ CREATE TABLE `domande` (
   `anni_exp_filtro` int(11) DEFAULT NULL,
   `ospedale_filtro` int(11) DEFAULT NULL,
   `dottore` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dump dei dati per la tabella `domande`
@@ -144,7 +146,7 @@ CREATE TABLE `dottori` (
   `specializzazione` int(11) NOT NULL,
   `ospedale` int(11) NOT NULL,
   `biografia` varchar(500) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dump dei dati per la tabella `dottori`
@@ -201,8 +203,10 @@ INSERT INTO `dottori` (`id_dottore`, `nome`, `cognome`, `sesso`, `data_nascita`,
 (48, 'Sofia', 'Donati', '', '1973-05-03', '2003-05-03', 'default_f.jpg', 8, 3, 'Dirigente Medico presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureato con lode all\'Università degli Studi di Milano, vanta 23 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolto nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
 (49, 'Valerio', 'D\'Amico', '', '1980-05-03', '2010-05-03', 'default_m.jpg', 9, 4, 'Dirigente Medico presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureato con lode all\'Università degli Studi di Milano, vanta 16 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolto nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
 (50, 'Veronica', 'Ferrero', 'f', '1989-05-03', '2019-05-03', 'default_f.jpg', 10, 5, 'Dirigente Medica presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureata con lode all\'Università degli Studi di Milano, vanta 7 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolta nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
-(59, 'Giorgio', 'Massari', 'm', '1999-02-03', '2026-05-03', 'default_m.jpg', 10, 6, NULL),
-(60, 'gg', 'gg', 'm', '2000-11-11', '2000-11-11', 'default_m.jpg', 12, 5, NULL);
+(59, 'Iginio', 'Massari', 'm', '1999-02-03', '2026-05-03', 'default_m.jpg', 10, 6, NULL),
+(60, 'gg', 'gg', 'm', '2000-11-11', '2000-11-11', 'default_m.jpg', 12, 5, NULL),
+(61, 'Aurora', 'Masenello', 'f', '2007-04-29', '0000-00-00', 'dottore_61_1777877928.jpg', 11, 4, 'Studentessa che sta facendo tirocinio all\'Ospedale di Treviso (Poco raccomandabile)'),
+(62, 'Gigio', 'Donnarumma', 'm', '1999-02-11', '2024-03-22', 'default_m.jpg', 13, 10, NULL);
 
 -- --------------------------------------------------------
 
@@ -217,7 +221,7 @@ CREATE TABLE `ospedali` (
   `citta` varchar(50) NOT NULL,
   `via` varchar(50) NOT NULL,
   `civico` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dump dei dati per la tabella `ospedali`
@@ -252,7 +256,7 @@ CREATE TABLE `risposte` (
   `data_risposta` date DEFAULT current_timestamp(),
   `dottore` int(11) NOT NULL,
   `domanda` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dump dei dati per la tabella `risposte`
@@ -285,7 +289,7 @@ CREATE TABLE `specializzazioni` (
   `codice` int(11) NOT NULL,
   `nome` varchar(50) NOT NULL,
   `descrizione` varchar(500) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Dump dei dati per la tabella `specializzazioni`
@@ -369,7 +373,7 @@ ALTER TABLE `specializzazioni`
 -- AUTO_INCREMENT per la tabella `credenziali`
 --
 ALTER TABLE `credenziali`
-  MODIFY `id_credenziali` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=71;
+  MODIFY `id_credenziali` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
 
 --
 -- AUTO_INCREMENT per la tabella `domande`
@@ -381,7 +385,7 @@ ALTER TABLE `domande`
 -- AUTO_INCREMENT per la tabella `dottori`
 --
 ALTER TABLE `dottori`
-  MODIFY `id_dottore` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id_dottore` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
 
 --
 -- AUTO_INCREMENT per la tabella `ospedali`

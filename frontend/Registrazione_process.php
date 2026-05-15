@@ -110,12 +110,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $connessione->commit();
 
-        echo "<h2>Registrazione avvenuta con successo!</h2>";
-        echo "<p>Benvenuto in MedicoForum, $nome. <a href='login.php'>Clicca qui per accedere</a>.</p>";
-        // Redirect eventuale
-        // In produzione, puoi usare questo per reindirizzare l'utente automaticamente:
-        // header("Location: login.php?registrazione=ok");
-        // exit;
+        $_SESSION["registrato"]=true;
+        header("Location: login.php?registrazione=ok");
+        exit;
 
 
     } catch (PDOException $e) {

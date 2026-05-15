@@ -21,7 +21,6 @@ if (!empty($_SESSION['utente']) && !$_SESSION["accesso"]) {
   $riga = $credenziali->fetch();
   $accesso_riuscito = false;
 
-<<<<<<< HEAD
   if ($riga && $riga['password'] === $password_post) {
     $_SESSION["utente"] = $riga['dottore'];
     $_SESSION["accesso"] = false;
@@ -36,23 +35,6 @@ if (!empty($_SESSION['utente']) && !$_SESSION["accesso"]) {
   }
 }
 
-=======
-if ($riga && $riga['password'] === $password_post) {
-  $_SESSION["utente"] = $riga['dottore'];
-  $_SESSION["accesso"] = false;
-  $accesso_riuscito = true;
-}
-
-if (!$accesso_riuscito) {
-  unset($_SESSION["utente"]);
-  $_SESSION["errore"] = -1;
-  header("Location: Login.php");
-  exit();
-}
-
-
-// ── Gestione nuova discussione ──
->>>>>>> 3b332312760e69449220779db658b6cdbc6ba79e
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'nuova_discussione') {
   $titolo = trim($_POST['titolo'] ?? '');
   $corpo = trim($_POST['corpo'] ?? '');
@@ -70,6 +52,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
   exit();
 }
 
+// ── Ricerca ──
+$cerca = trim($_GET['q'] ?? '');
+$cercaParam = '%' . $cerca . '%';
+
+// ── Filtri specializzazione (multipli) ──
+$filtri_spec = [];
+if (!empty($_GET['spec']) && is_array($_GET['spec'])) {
+  foreach ($_GET['spec'] as $v) {
+    $v = (int) $v;
+    if ($v > 0)
+      $filtri_spec[] = $v;
+  }
+}
+
+// ── Filtro ordinamento ──
+$ordina = $_GET['ordina'] ?? 'recenti';
+$ordina_validi = ['recenti', 'meno_recenti', 'commentati', 'meno_commentati'];
+if (!in_array($ordina, $ordina_validi))
+  $ordina = 'recenti';
+
+// ── Filtro periodo ──
+$periodo = $_GET['periodo'] ?? 'tutto';
+$periodo_validi = ['oggi', '7giorni', '30giorni', 'tutto'];
+if (!in_array($periodo, $periodo_validi))
+  $periodo = 'tutto';
+
+// ── Statistiche reali dal DB ──
+$stat_medici = $connessione->query("SELECT COUNT(*) FROM dottori")->fetchColumn();
+$stat_casi = $connessione->query("SELECT COUNT(*) FROM domande")->fetchColumn();
+$stat_oggi = $connessione->query("SELECT COUNT(*) FROM domande WHERE DATE(data_domanda) = CURDATE()")->fetchColumn();
+$stat_specialita = $connessione->query("SELECT COUNT(*) FROM specializzazioni")->fetchColumn();
+
 // ── Fetch selects per il modale ──
 $sql_spec = "SELECT codice, nome FROM specializzazioni ORDER BY nome";
 $stmt_spec = $connessione->prepare($sql_spec);
@@ -80,6 +94,109 @@ $sql_osp = "SELECT id_ospedale, nome, citta FROM ospedali ORDER BY nome";
 $stmt_osp = $connessione->prepare($sql_osp);
 $stmt_osp->execute();
 $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
+
+// ── Emoji per specializzazioni ──
+$emoji_map = [
+  'Cardiologia' => '🫀',
+  'Chirurgia Generale' => '🔪',
+  'Dermatologia' => '🧴',
+  'Endocrinologia' => '⚗️',
+  'Gastroenterologia' => '🫃',
+  'Ginecologia e Ostetricia' => '🤰',
+  'Medicina Interna' => '🩺',
+  'Neurologia' => '🧠',
+  'Oncologia' => '🔬',
+  'Ortopedia e Traumatologia' => '🦴',
+  'Pediatria' => '👶',
+  'Psichiatria' => '🧩',
+  'Radiologia' => '🩻',
+  'Urologia' => '💧',
+  'Oculistica' => '👁️',
+  'Otorinolaringoiatria' => '👂',
+  'Anestesia e Rianimazione' => '💉',
+  "Medicina d'Emergenza-Urgenza" => '🚨',
+  'Nefrologia' => '🫘',
+  'Pneumologia' => '🫁',
+];
+
+// ── Specializzazioni con conteggio post ──
+$sql_spec_count = "
+    SELECT s.codice, s.nome,
+           COUNT(DISTINCT d.id_domanda) AS nPost
+    FROM specializzazioni s
+    LEFT JOIN dottori doc ON doc.specializzazione = s.codice
+    LEFT JOIN domande d ON d.dottore = doc.id_dottore
+    GROUP BY s.codice, s.nome
+    ORDER BY nPost DESC, s.nome ASC";
+$elenco_spec_con_count = $connessione->query($sql_spec_count)->fetchAll(PDO::FETCH_ASSOC);
+foreach ($elenco_spec_con_count as &$s) {
+  $s['emoji'] = $emoji_map[$s['nome']] ?? '🏥';
+}
+unset($s);
+
+// ── Fetch profilo utente loggato ──
+$sql = "SELECT dottori.nome AS nome, cognome, sesso, citta, foto_profilo, specializzazioni.nome AS nomeS FROM dottori, ospedali, specializzazioni WHERE ospedale=id_ospedale AND specializzazione=codice AND id_dottore=?";
+$profiloStmt = $connessione->prepare($sql);
+$profiloStmt->execute(array($_SESSION['utente']));
+$profilo = $profiloStmt->rowCount() > 0 ? $profiloStmt->fetch(PDO::FETCH_ASSOC) : null;
+
+// ── Query post con ricerca e filtri ──
+$where = [];
+$params = [];
+
+if ($cerca !== '') {
+  $where[] = "(domande.titolo LIKE :cerca
+                 OR domande.corpo LIKE :cerca
+                 OR d.nome LIKE :cerca
+                 OR d.cognome LIKE :cerca)";
+  $params[':cerca'] = $cercaParam;
+}
+
+if (!empty($filtri_spec)) {
+  $placeholders = [];
+  foreach ($filtri_spec as $i => $fid) {
+    $key = ':spec' . $i;
+    $placeholders[] = $key;
+    $params[$key] = $fid;
+  }
+  $where[] = "d.specializzazione IN (" . implode(',', $placeholders) . ")";
+}
+
+// ── Filtro periodo ──
+if ($periodo === 'oggi') {
+  $where[] = "DATE(domande.data_domanda) = CURDATE()";
+} elseif ($periodo === '7giorni') {
+  $where[] = "domande.data_domanda >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
+} elseif ($periodo === '30giorni') {
+  $where[] = "domande.data_domanda >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+}
+
+$sql = "SELECT id_domanda, titolo, domande.corpo, d.nome AS nomeD, cognome, sesso,
+               foto_profilo, s.nome AS nomeS, COUNT(id_risposta) AS nRisposte,
+               specializzazione_filtro, anni_exp_filtro, ospedale_filtro,
+               domande.data_domanda
+        FROM domande
+        INNER JOIN dottori AS d ON domande.dottore = d.id_dottore
+        INNER JOIN specializzazioni AS s ON d.specializzazione = s.codice
+        LEFT JOIN risposte ON domande.id_domanda = risposte.domanda";
+
+if (!empty($where)) {
+  $sql .= " WHERE " . implode(" AND ", $where);
+}
+
+$order_map = [
+  'recenti' => 'domande.data_domanda DESC',
+  'meno_recenti' => 'domande.data_domanda ASC',
+  'commentati' => 'nRisposte DESC',
+  'meno_commentati' => 'nRisposte ASC',
+];
+$sql .= " GROUP BY id_domanda ORDER BY " . $order_map[$ordina];
+
+$post = $connessione->prepare($sql);
+foreach ($params as $key => $val) {
+  $post->bindValue($key, $val, PDO::PARAM_STR);
+}
+$post->execute();
 ?>
 
 
@@ -290,7 +407,9 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
     /* Search */
     .nav-search {
       position: relative;
-      flex: 0 0 200px
+      flex: 0 0 200px;
+      display: flex;
+      align-items: center
     }
 
     .nav-search input {
@@ -1340,6 +1459,58 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
       background: var(--teal-lt)
     }
 
+    /* ══════════ SEARCH BANNER ══════════ */
+    .search-banner {
+      background: var(--teal-lt);
+      border: 1px solid rgba(15, 159, 142, .2);
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--teal2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: fadeUp .3s ease both
+    }
+
+    .search-banner a {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s
+    }
+
+    .search-banner a:hover {
+      color: var(--navy)
+    }
+
+    .search-no-results {
+      text-align: center;
+      padding: 48px 24px;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      color: var(--muted)
+    }
+
+    .search-no-results .icon {
+      font-size: 40px;
+      margin-bottom: 12px
+    }
+
+    .search-no-results h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      color: var(--navy);
+      margin-bottom: 6px
+    }
+
+    .search-no-results p {
+      font-size: 13px
+    }
+
     /* ══════════ RIGHT SIDEBAR ══════════ */
 
     /* Ad card */
@@ -2005,6 +2176,118 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
       opacity: .9;
       transform: translateY(-1px)
     }
+
+    /* ══════════ ACTIVE FILTERS BAR ══════════ */
+    .active-filters-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: var(--teal-lt);
+      border: 1px solid rgba(15, 159, 142, .22);
+      border-radius: 12px;
+      padding: 10px 16px;
+      animation: fadeUp .3s ease both;
+    }
+
+    .af-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--teal2);
+      margin-right: 2px;
+    }
+
+    .af-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--teal);
+      color: #fff;
+      padding: 4px 12px 4px 10px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background .2s;
+    }
+
+    .af-chip:hover {
+      background: var(--teal2);
+    }
+
+    .af-remove {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1;
+      opacity: .85;
+    }
+
+    .af-clear {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+
+    .af-clear:hover {
+      color: var(--navy);
+    }
+
+    /* ══════════ FILTER BTN ATTIVO ══════════ */
+    .icon-btn.filter-btn-active {
+      background: var(--teal-lt);
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    .filter-count-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 16px;
+      height: 16px;
+      background: var(--teal);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 9px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid #fff;
+      line-height: 1;
+    }
+
+    /* ── I chip del drawer diventano <button> ── */
+    .filter-chips .filter-chip {
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 6px 13px;
+      border-radius: 100px;
+      transition: all .2s;
+    }
+
+    .filter-chips .filter-chip.active,
+    .filter-chips .filter-chip:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+      background: var(--teal-lt);
+    }
+
+    .post-date {
+      color: #b0bec5 !important;
+      font-weight: 400;
+      font-size: 11px;
+    }
   </style>
 </head>
 
@@ -2013,72 +2296,82 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
   <!-- ══ TOP BAR ══ -->
   <div class="topbar">
     <div class="topbar-left">
-      <div class="live-badge">
-        <div class="live-dot"></div> 1.240 medici online ora
-      </div>
-      <span>·</span>
       <a href="https://www.giornaledicardiologia.it/archivio/4570/articoli/45733/">📋 Linee guida ESC 2025
         aggiornate</a>
-    </div>
-    <div class="topbar-right">
-      <a href="#">ECM & Formazione</a>
-      <a href="#">Contatti</a>
-      <a href="#">App Mobile</a>
     </div>
   </div>
 
   <!-- ══ HEADER ══ -->
   <header style="display: flex; flex-wrap: wrap">
-    <a href="login.php" class="nav-logo">
+    <a href=# class="nav-logo">
       <span class="cross">✚</span>
       MedicoForum
     </a>
 
-    <div class="nav-search">
+    <!-- ── SEARCH FORM (GET) ── -->
+    <form method="GET" action="home.php" class="nav-search" id="searchForm">
       <div class="search-icon">
         <svg viewBox="0 0 24 24">
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
       </div>
-      <input type="text" placeholder="Cerca casi, colleghi…">
-    </div>
+      <input type="text" id="searchInput" name="q" placeholder="Cerca casi, colleghi…"
+        value="<?= htmlspecialchars($cerca) ?>" autocomplete="off">
+    </form>
+
+    <!-- ── BANNER FILTRI ATTIVI ── -->
+    <?php if (!empty($filtri_spec)): ?>
+      <div class="active-filters-bar">
+        <span class="af-label">Filtri attivi:</span>
+        <?php foreach ($filtri_spec as $fid):
+          $fNome = '';
+          foreach ($elenco_spec_con_count as $s) {
+            if ($s['codice'] == $fid) {
+              $fNome = $s['nome'];
+              break;
+            }
+          }
+          // URL per rimuovere solo questo filtro
+          $restanti = array_filter($filtri_spec, fn($v) => $v != $fid);
+          $query = [];
+          foreach ($restanti as $r)
+            $query[] = 'spec[]=' . $r;
+          if ($cerca !== '')
+            $query[] = 'q=' . urlencode($cerca);
+          $removeHref = 'home.php' . (!empty($query) ? '?' . implode('&', $query) : '');
+          ?>
+          <a href="<?= $removeHref ?>" class="af-chip">
+            <?= htmlspecialchars($fNome) ?>
+            <span class="af-remove">×</span>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
 
     <div class="nav-right">
-      <div class="icon-btn" id="openFilters" title="Filtri">
+      <?php
+      $filtri_drawer_attivi = 0;
+      if ($ordina !== 'recenti')
+        $filtri_drawer_attivi++;
+      if ($periodo !== 'tutto')
+        $filtri_drawer_attivi++;
+      ?>
+      <div class="icon-btn <?= $filtri_drawer_attivi > 0 ? 'filter-btn-active' : '' ?>" id="openFilters" title="Filtri">
         <svg viewBox="0 0 24 24">
           <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
         </svg>
+        <?php if ($filtri_drawer_attivi > 0): ?>
+          <span class="filter-count-badge"><?= $filtri_drawer_attivi ?></span>
+        <?php endif; ?>
       </div>
-      <a href="#" class="icon-btn" title="Messaggi">
-        <svg viewBox="0 0 24 24">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-      </a>
-      <a href="#" class="icon-btn" title="Notifiche">
-        <div class="badge-dot"></div>
-        <svg viewBox="0 0 24 24">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-        </svg>
-      </a>
       <a href="profilo.php" class="profile-pill">
         <?php
-        $sql = "SELECT dottori.nome AS nome, cognome, sesso, citta, foto_profilo, specializzazioni.nome AS nomeS FROM dottori, ospedali, specializzazioni WHERE ospedale=id_ospedale AND specializzazione=codice AND id_dottore=?";
-        $profilo = $connessione->prepare($sql);
-        $profilo->execute(array($_SESSION['utente']));
-
-        if ($profilo->rowCount() > 0) {
-          $profilo = $profilo->fetch(PDO::FETCH_ASSOC);
+        if ($profilo) {
           echo '<img src="img/' . $profilo["foto_profilo"] . '" class="avatar">';
-          if ($profilo["sesso"] == 'm') {
-            echo 'Dr. ';
-          } else {
-            echo 'Dott.ssa ';
-          }
+          echo ($profilo["sesso"] == 'm') ? 'Dr. ' : 'Dott.ssa ';
           echo $profilo["cognome"];
         }
-
         ?>
       </a>
     </div>
@@ -2165,28 +2458,28 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
     <div class="qstat">
       <div class="qstat-icon">👨‍⚕️</div>
       <div>
-        <div class="qstat-num">14.800+</div>
+        <div class="qstat-num"><?= number_format($stat_medici, 0, ',', '.') ?></div>
         <div class="qstat-label">Medici iscritti</div>
       </div>
     </div>
     <div class="qstat">
       <div class="qstat-icon">🩺</div>
       <div>
-        <div class="qstat-num">58.400</div>
+        <div class="qstat-num"><?= number_format($stat_casi, 0, ',', '.') ?></div>
         <div class="qstat-label">Casi clinici</div>
       </div>
     </div>
     <div class="qstat">
       <div class="qstat-icon">💬</div>
       <div>
-        <div class="qstat-num">340</div>
+        <div class="qstat-num"><?= $stat_oggi ?></div>
         <div class="qstat-label">Discussioni oggi</div>
       </div>
     </div>
     <div class="qstat">
       <div class="qstat-icon">🏥</div>
       <div>
-        <div class="qstat-num">320+</div>
+        <div class="qstat-num"><?= number_format($stat_specialita, 0, ',', '.') ?></div>
         <div class="qstat-label">Specialità</div>
       </div>
     </div>
@@ -2202,125 +2495,6 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
   <!-- ══ LAYOUT 3 COLONNE ══ -->
   <div class="page-wrapper">
 
-<<<<<<< HEAD
-=======
-    <!-- ══ SIDEBAR SINISTRA ══ -->
-    <aside class="sidebar sidebar-left">
-
-      <!-- Profilo -->
-      <div class="profile-widget">
-        <div class="profile-card">
-          <div class="profile-cover"></div>
-          <div class="profile-info">
-            <?php
-
-            echo '<img src="img/' . $profilo["foto_profilo"] . '" class="big-avatar">
-                  <div class="pname">';
-            if ($profilo["sesso"] == 'm') {
-              echo 'Dr. ';
-            } else {
-              echo 'Dott.ssa ';
-            }
-            echo $profilo["nome"] . ' ' . $profilo["cognome"] . '</div>
-                <div class="pspec">' . $profilo["nomeS"] . ' · ' . $profilo["citta"] . '</div>';
-
-            ?>
-          </div>
-        </div>
-      </div>
-
-      <!-- Specializzazioni -->
-      <div class="widget">
-        <div class="widget-header">
-          <span class="widget-title"><span class="widget-title-icon">🏷️</span> Specializzazioni</span>
-          <a href="#" class="widget-link">Tutte →</a>
-        </div>
-        <div class="widget-body">
-          <ul class="spec-list">
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🫀</span> Cardiologia</span><span
-                  class="count-pill">48</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">👶</span> Pediatria</span><span
-                  class="count-pill">31</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🧠</span> Neurologia</span><span
-                  class="count-pill">27</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🩺</span> Med. Interna</span><span
-                  class="count-pill">22</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🦴</span> Ortopedia</span><span
-                  class="count-pill">15</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🔬</span> Oncologia</span><span
-                  class="count-pill">19</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🫁</span> Pneumologia</span><span
-                  class="count-pill">14</span></a></li>
-          </ul>
-        </div>
-      </div>
-
-    </aside>
-
-    <!-- ══ FEED CENTRALE ══ -->
-    <main>
-
-      <div class="feed-header">
-        <div class="feed-title-group">
-          <div class="feed-label">Community</div>
-          <div class="feed-title">Discussioni recenti</div>
-        </div>
-      </div>
-
-      <!-- POST -->
-      <?php
-      $sql = "SELECT id_domanda, titolo, domande.corpo, d.nome AS nomeD, cognome, sesso, foto_profilo, s.nome AS nomeS, COUNT(*) AS nRisposte, specializzazione_filtro, anni_exp_filtro, ospedale_filtro
-              FROM domande, dottori AS d, specializzazioni AS s, risposte
-              WHERE (domande.dottore=id_dottore) AND (specializzazione=codice) AND (domanda=id_domanda) 
-              GROUP BY id_domanda";
-      $post = $connessione->prepare($sql);
-      $post->execute();
-
-      if ($post->rowCount() > 0) {
-        while ($postSingolo = $post->fetch(PDO::FETCH_ASSOC)) {
-          echo '<article class="question-card">
-            <div class="card-top">
-              <div class="author-row">
-                <img src="img/' . $postSingolo["foto_profilo"] . '" class="author-avatar a3">
-                <div>
-                  <div class="author-name">';
-          if ($postSingolo["sesso"] == 'm') {
-            echo 'Dr. ';
-          } else {
-            echo 'Dott.ssa ';
-          }
-          echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '</div>
-                  <div class="author-meta"><span>' . $postSingolo["nomeS"] . '</span></div>
-                </div>
-              </div>
-              <div class="card-tags">
-                <span class="spec-tag">' . $postSingolo['specializzazione_filtro'] . '</span>
-                <span class="spec-tag">' . $postSingolo['anni_exp_filtro'] . '</span>
-                <span class="spec-tag">' . $postSingolo['ospedale_filtro'] . '</span>
-                <span class="spec-tag">Non sono presenti filtri</span>
-              </div>
-            </div>
-            <h2 class="question-title">' . $postSingolo["titolo"] . '</h2>
-            <p class="question-preview">' . $postSingolo["corpo"] . '</p>
-            <div class="card-footer">
-              <div class="card-actions">
-                <button class="card-action">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  ' . $postSingolo["nRisposte"] . ' risposte
-                </button>
-              </div>
-              <a href="discussione.php?id=' . $postSingolo["id_domanda"] . '" class="read-more">Leggi tutto →</a>
-            </div>
-          </article>';
-        }
-      }
-      ?>
-
-    </main>
-
->>>>>>> 3b332312760e69449220779db658b6cdbc6ba79e
     <!-- ══ SIDEBAR DESTRA ══ -->
     <aside class="sidebar sidebar-right">
 
@@ -2337,36 +2511,7 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
         </div>
       </div>
 
-      <!-- TRENDING -->
-      <div class="widget">
-        <div class="widget-header">
-          <span class="widget-title"><span class="widget-title-icon">📈</span> Trending</span>
-        </div>
-        <div class="widget-body" style="padding:10px 14px">
-          <div class="trend-list">
-            <div class="trend-item">
-              <div class="trend-left"><span class="trend-rank">1</span><span
-                  class="trend-name">#FibrillazioneAtriale</span></div><span class="trend-count">142 post</span>
-            </div>
-            <div class="trend-item">
-              <div class="trend-left"><span class="trend-rank">2</span><span class="trend-name">#Alzheimer2025</span>
-              </div><span class="trend-count">98 post</span>
-            </div>
-            <div class="trend-item">
-              <div class="trend-left"><span class="trend-rank">3</span><span class="trend-name">#DOAC</span></div>
-              <span class="trend-count">87 post</span>
-            </div>
-            <div class="trend-item">
-              <div class="trend-left"><span class="trend-rank">4</span><span class="trend-name">#HER2</span></div>
-              <span class="trend-count">74 post</span>
-            </div>
-            <div class="trend-item">
-              <div class="trend-left"><span class="trend-rank">5</span><span class="trend-name">#Bronchiolite</span>
-              </div><span class="trend-count">61 post</span>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       <!-- AD 2 -->
       <div class="ad-card">
@@ -2381,37 +2526,7 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
         </div>
       </div>
 
-      <!-- EVENTI -->
-      <div class="widget">
-        <div class="widget-header">
-          <span class="widget-title"><span class="widget-title-icon">📅</span> Prossimi Congressi</span>
-        </div>
-        <div class="widget-body">
-          <div class="event-list">
-            <div class="event-item">
-              <div class="event-date-box"><span class="event-day">12</span><span class="event-mon">Apr</span></div>
-              <div>
-                <div class="event-name">Congresso Nazionale ANMCO</div>
-                <div class="event-loc">📍 Milano, Fieramilano</div>
-              </div>
-            </div>
-            <div class="event-item">
-              <div class="event-date-box"><span class="event-day">24</span><span class="event-mon">Apr</span></div>
-              <div>
-                <div class="event-name">Workshop Pediatria d'Urgenza</div>
-                <div class="event-loc">📍 Roma, Bambino Gesù</div>
-              </div>
-            </div>
-            <div class="event-item">
-              <div class="event-date-box"><span class="event-day">08</span><span class="event-mon">Mag</span></div>
-              <div>
-                <div class="event-name">Forum Oncologia 2025</div>
-                <div class="event-loc">📍 Bologna, IRCCS</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
     </aside>
 
@@ -2421,21 +2536,23 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
       <div class="feed-header">
         <div class="feed-title-group">
           <div class="feed-label">Community</div>
-          <div class="feed-title">Discussioni recenti</div>
+          <div class="feed-title">
+            <?= $cerca !== '' ? 'Risultati ricerca' : 'Discussioni' ?>
+          </div>
         </div>
       </div>
 
-      <!-- POST -->
-      <?php
-      $sql = "SELECT id_domanda, titolo, domande.corpo, d.nome AS nomeD, cognome, sesso, foto_profilo, s.nome AS nomeS, COUNT(id_risposta) AS nRisposte, specializzazione_filtro, anni_exp_filtro, ospedale_filtro
-              FROM domande
-              INNER JOIN dottori AS d ON domande.dottore = d.id_dottore
-              INNER JOIN specializzazioni AS s ON d.specializzazione = s.codice
-              LEFT JOIN risposte ON domande.id_domanda = risposte.domanda
-              GROUP BY id_domanda";
-      $post = $connessione->prepare($sql);
-      $post->execute();
+      <!-- ── BANNER RISULTATI RICERCA ── -->
+      <?php if ($cerca !== ''): ?>
+        <div class="search-banner">
+          <span>🔍 Risultati per <strong>"<?= htmlspecialchars($cerca) ?>"</strong> — <?= $post->rowCount() ?>
+            trovati</span>
+          <a href="home.php">✕ Cancella ricerca</a>
+        </div>
+      <?php endif; ?>
 
+      <!-- ── POST ── -->
+      <?php
       if ($post->rowCount() > 0) {
         while ($postSingolo = $post->fetch(PDO::FETCH_ASSOC)) {
           echo '<article class="question-card">
@@ -2444,50 +2561,47 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
                 <img src="img/' . $postSingolo["foto_profilo"] . '" class="author-avatar a3">
                 <div>
                   <div class="author-name">';
-          if ($postSingolo["sesso"] == 'm') {
-            echo 'Dr. ';
-          } else {
-            echo 'Dott.ssa ';
-          }
+          echo ($postSingolo["sesso"] == 'm') ? 'Dr. ' : 'Dott.ssa ';
+          $dataFormattata = $postSingolo["data_domanda"]
+            ? (new DateTime($postSingolo["data_domanda"]))->format('d M Y')
+            : '';
+
           echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '</div>
-                  <div class="author-meta"><span>' . $postSingolo["nomeS"] . '</span></div>
+                  <div class="author-meta">
+                    <span>' . $postSingolo["nomeS"] . '</span>
+                    ' . ($dataFormattata ? '<span class="post-date"> · ' . $dataFormattata . '</span>' : '') . '
+                  </div>
                 </div>
               </div>
               <div class="card-tags">';
-          $filtri = false;
+          $requisiti = false;
           if (!empty($postSingolo['specializzazione_filtro'])) {
-            $sql = "SELECT nome
-              FROM specializzazioni
-              WHERE codice = ?";
+            $sql = "SELECT nome FROM specializzazioni WHERE codice = ?";
             $specializzazione = $connessione->prepare($sql);
             $specializzazione->execute([$postSingolo['specializzazione_filtro']]);
-            $specializzazione = $specializzazione->fetch(\PDO::FETCH_ASSOC);
+            $specializzazione = $specializzazione->fetch(PDO::FETCH_ASSOC);
             echo '<span class="spec-tag">' . $specializzazione['nome'] . '</span>';
-            $filtri = true;
+            $requisiti = true;
           }
           if (!empty($postSingolo['anni_exp_filtro'])) {
             echo '<span class="spec-tag">' . $postSingolo['anni_exp_filtro'] . ' anni</span>';
-            $filtri = true;
+            $requisiti = true;
           }
           if (!empty($postSingolo['ospedale_filtro'])) {
-            $sql = "SELECT nome
-              FROM ospedali
-              WHERE id_ospedale = ?";
+            $sql = "SELECT nome FROM ospedali WHERE id_ospedale = ?";
             $ospedale = $connessione->prepare($sql);
             $ospedale->execute([$postSingolo['ospedale_filtro']]);
-            $ospedale = $ospedale->fetch(\PDO::FETCH_ASSOC);
+            $ospedale = $ospedale->fetch(PDO::FETCH_ASSOC);
             echo '<span class="spec-tag">' . $ospedale['nome'] . '</span>';
-            $filtri = true;
+            $requisiti = true;
           }
-
-          if (!$filtri) {
-            echo '<span class="spec-tag">Non sono presenti filtri</span>';
+          if (!$requisiti) {
+            echo '<span class="spec-tag">Non sono presenti requisiti</span>';
           }
-
           echo '</div>
             </div>
-            <h2 class="question-title">' . $postSingolo["titolo"] . '</h2>
-            <p class="question-preview">' . $postSingolo["corpo"] . '</p>
+            <h2 class="question-title">' . htmlspecialchars($postSingolo["titolo"]) . '</h2>
+            <p class="question-preview">' . htmlspecialchars($postSingolo["corpo"]) . '</p>
             <div class="card-footer">
               <div class="card-actions">
                 <button class="card-action">
@@ -2501,6 +2615,13 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
             </div>
           </article>';
         }
+      } else {
+        // Nessun risultato
+        echo '<div class="search-no-results">
+          <div class="icon">🔍</div>
+          <h3>Nessun risultato trovato</h3>
+          <p>Nessuna discussione corrisponde a "<strong>' . htmlspecialchars($cerca) . '</strong>". Prova con un termine diverso.</p>
+        </div>';
       }
       ?>
 
@@ -2515,17 +2636,13 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
           <div class="profile-cover"></div>
           <div class="profile-info">
             <?php
-
-            echo '<img src="img/' . $profilo["foto_profilo"] . '" class="big-avatar">
-            <div class="pname">';
-            if ($profilo["sesso"] == 'm') {
-              echo 'Dr. ';
-            } else {
-              echo 'Dott.ssa ';
+            if ($profilo) {
+              echo '<img src="img/' . $profilo["foto_profilo"] . '" class="big-avatar">
+              <div class="pname">';
+              echo ($profilo["sesso"] == 'm') ? 'Dr. ' : 'Dott.ssa ';
+              echo $profilo["nome"] . ' ' . $profilo["cognome"] . '</div>
+              <div class="pspec">' . $profilo["nomeS"] . ' · ' . $profilo["citta"] . '</div>';
             }
-            echo $profilo["nome"] . ' ' . $profilo["cognome"] . '</div>
-          <div class="pspec">' . $profilo["nomeS"] . ' · ' . $profilo["citta"] . '</div>';
-
             ?>
           </div>
         </div>
@@ -2534,25 +2651,43 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
       <!-- Specializzazioni -->
       <div class="widget">
         <div class="widget-header">
-          <span class="widget-title"><span class="widget-title-icon">🏷️</span> Specializzazioni</span>
-          <a href="#" class="widget-link">Tutte →</a>
+          <span class="widget-title"><span class="widget-title-icon"></span>Filtro specializzazioni</span>
+          <?php if (!empty($filtri_spec)): ?>
+            <a href="home.php<?= $cerca !== '' ? '?q=' . urlencode($cerca) : '' ?>" class="widget-link"
+              style="color:var(--muted)">Rimuovi tutti</a>
+          <?php endif; ?>
         </div>
         <div class="widget-body">
           <ul class="spec-list">
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🫀</span> Cardiologia</span><span
-                  class="count-pill">48</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">👶</span> Pediatria</span><span
-                  class="count-pill">31</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🧠</span> Neurologia</span><span
-                  class="count-pill">27</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🩺</span> Med. Interna</span><span
-                  class="count-pill">22</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🦴</span> Ortopedia</span><span
-                  class="count-pill">15</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🔬</span> Oncologia</span><span
-                  class="count-pill">19</span></a></li>
-            <li><a href="#"><span class="spec-left"><span class="spec-emoji">🫁</span> Pneumologia</span><span
-                  class="count-pill">14</span></a></li>
+            <?php foreach ($elenco_spec_con_count as $s):
+              $isActive = in_array($s['codice'], $filtri_spec);
+              // Costruisce l'URL aggiungendo o rimuovendo questa specializzazione
+              $nuovi_filtri = $filtri_spec;
+              if ($isActive) {
+                $nuovi_filtri = array_filter($nuovi_filtri, fn($v) => $v != $s['codice']);
+              } else {
+                $nuovi_filtri[] = $s['codice'];
+              }
+              $query = [];
+              if (!empty($nuovi_filtri))
+                foreach ($nuovi_filtri as $f)
+                  $query[] = 'spec[]=' . $f;
+              if ($cerca !== '')
+                $query[] = 'q=' . urlencode($cerca);
+              $href = 'home.php' . (!empty($query) ? '?' . implode('&', $query) : '');
+              ?>
+              <li>
+                <a href="<?= $href ?>" <?= $isActive ? 'style="background:var(--teal-lt);color:var(--teal2);font-weight:700;"' : '' ?>>
+                  <span class="spec-left">
+                    <span class="spec-emoji"><?= htmlspecialchars($s['emoji']) ?></span>
+                    <?= htmlspecialchars($s['nome']) ?>
+                  </span>
+                  <span class="count-pill" <?= $isActive ? 'style="background:var(--teal);color:#fff;"' : '' ?>>
+                    <?= (int) $s['nPost'] ?>
+                  </span>
+                </a>
+              </li>
+            <?php endforeach; ?>
           </ul>
         </div>
       </div>
@@ -2592,7 +2727,7 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <div class="modal-field">
-          <div class="modal-label" style="margin-bottom:4px">Filtri <span class="modal-hint">(opzionali)</span></div>
+          <div class="modal-label" style="margin-bottom:4px">Requisiti <span class="modal-hint">(opzionali)</span></div>
           <div class="modal-filters">
 
             <div class="modal-field">
@@ -2639,52 +2774,53 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
       <div class="drawer-title">Filtra discussioni</div>
       <button class="drawer-close" id="closeDrawer">✕</button>
     </div>
-    <div class="filter-form">
-      <div class="filter-group">
-        <div class="filter-label">Specializzazione</div>
-        <select>
-          <option>Tutte le specializzazioni</option>
-          <option>Cardiologia</option>
-          <option>Pediatria</option>
-          <option>Neurologia</option>
-          <option>Oncologia</option>
-          <option>Medicina Interna</option>
-        </select>
-      </div>
+
+    <form method="GET" action="home.php" class="filter-form" id="filterForm">
+
+      <?php // Preserva la ricerca testuale se presente ?>
+      <?php if ($cerca !== ''): ?>
+        <input type="hidden" name="q" value="<?= htmlspecialchars($cerca) ?>">
+      <?php endif; ?>
+
+      <?php // Preserva i filtri specializzazione se presenti ?>
+      <?php foreach ($filtri_spec as $fid): ?>
+        <input type="hidden" name="spec[]" value="<?= (int) $fid ?>">
+      <?php endforeach; ?>
+
       <div class="filter-group">
         <div class="filter-label">Ordina per</div>
-        <select>
-          <option>Più recenti</option>
-          <option>Più commentati</option>
-          <option>Più votati</option>
-          <option>Più visti</option>
-        </select>
+        <div class="filter-chips" data-name="ordina">
+          <button type="button" class="filter-chip <?= $ordina === 'recenti' ? 'active' : '' ?>"
+            data-value="recenti">Più recenti</button>
+          <button type="button" class="filter-chip <?= $ordina === 'meno_recenti' ? 'active' : '' ?>"
+            data-value="meno_recenti">Meno recenti</button>
+          <button type="button" class="filter-chip <?= $ordina === 'commentati' ? 'active' : '' ?>"
+            data-value="commentati">Più commentati</button>
+          <button type="button" class="filter-chip <?= $ordina === 'meno_commentati' ? 'active' : '' ?>"
+            data-value="meno_commentati">Meno commentati</button>
+        </div>
+        <input type="hidden" name="ordina" id="input_ordina" value="<?= htmlspecialchars($ordina) ?>">
       </div>
+
       <div class="filter-group">
         <div class="filter-label">Periodo</div>
-        <div class="filter-chips">
-          <div class="filter-chip active">Oggi</div>
-          <div class="filter-chip">7 giorni</div>
-          <div class="filter-chip">30 giorni</div>
-          <div class="filter-chip">Tutto</div>
+        <div class="filter-chips" data-name="periodo">
+          <button type="button" class="filter-chip <?= $periodo === 'oggi' ? 'active' : '' ?>"
+            data-value="oggi">Oggi</button>
+          <button type="button" class="filter-chip <?= $periodo === '7giorni' ? 'active' : '' ?>" data-value="7giorni">7
+            giorni</button>
+          <button type="button" class="filter-chip <?= $periodo === '30giorni' ? 'active' : '' ?>"
+            data-value="30giorni">30 giorni</button>
+          <button type="button" class="filter-chip <?= $periodo === 'tutto' ? 'active' : '' ?>"
+            data-value="tutto">Tutto</button>
         </div>
+        <input type="hidden" name="periodo" id="input_periodo" value="<?= htmlspecialchars($periodo) ?>">
       </div>
-      <div class="filter-group">
-        <div class="filter-label">Tipo di contenuto</div>
-        <div class="filter-chips">
-          <div class="filter-chip active">Tutto</div>
-          <div class="filter-chip">Casi clinici</div>
-          <div class="filter-chip">Domande</div>
-          <div class="filter-chip">Ricerca</div>
-          <div class="filter-chip">News</div>
-        </div>
-      </div>
-      <div class="filter-group">
-        <div class="filter-label">Cerca per parola chiave</div>
-        <input type="text" placeholder="es. DOACs, bronchiolite…">
-      </div>
-      <button class="apply-btn">Applica filtri →</button>
-    </div>
+
+      <button type="submit" class="apply-btn">Applica filtri →</button>
+
+    </form>
+  </div>
   </div>
 
   <script>
@@ -2722,12 +2858,14 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
     document.getElementById('closeDrawer').addEventListener('click', () => { overlay.classList.remove('open'); drawer.classList.remove('open'); });
     overlay.addEventListener('click', () => { overlay.classList.remove('open'); drawer.classList.remove('open'); });
 
-    // ── Filter chips ──
-    document.querySelectorAll('.filter-chips').forEach(group => {
+    // ── Filter chips (drawer — radio behavior) ──
+    document.querySelectorAll('.filter-chips[data-name]').forEach(group => {
+      const hiddenInput = document.getElementById('input_' + group.dataset.name);
       group.querySelectorAll('.filter-chip').forEach(chip => {
         chip.addEventListener('click', () => {
           group.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
           chip.classList.add('active');
+          if (hiddenInput) hiddenInput.value = chip.dataset.value;
         });
       });
     });
@@ -2760,6 +2898,43 @@ $elenco_osp = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
           this.classList.toggle('liked');
         }
       });
+    });
+
+    // ── Ricerca live ──
+    const searchInput = document.getElementById('searchInput');
+    const searchForm = document.getElementById('searchForm');
+    let searchTimer;
+
+    searchInput.addEventListener('input', function () {
+      const q = this.value.trim().toLowerCase();
+
+      // Filtra subito le card già in pagina
+      document.querySelectorAll('.question-card').forEach(card => {
+        const titolo = card.querySelector('.question-title')?.textContent.toLowerCase() || '';
+        const preview = card.querySelector('.question-preview')?.textContent.toLowerCase() || '';
+        const autore = card.querySelector('.author-name')?.textContent.toLowerCase() || '';
+        const match = q === '' || titolo.includes(q) || preview.includes(q) || autore.includes(q);
+        card.style.display = match ? '' : 'none';
+      });
+
+      // Dopo 600ms di inattività → submit al server per risultati completi dal DB
+      clearTimeout(searchTimer);
+      if (q.length >= 3) {
+        searchTimer = setTimeout(() => searchForm.submit(), 600);
+      }
+
+      // Se campo svuotato → mostra tutto senza ricaricare
+      if (q === '') {
+        document.querySelectorAll('.question-card').forEach(c => c.style.display = '');
+      }
+    });
+
+    // Evita submit con campo vuoto (torna alla home pulita)
+    searchForm.addEventListener('submit', function (e) {
+      if (searchInput.value.trim() === '') {
+        e.preventDefault();
+        window.location.href = 'home.php';
+      }
     });
   </script>
 </body>

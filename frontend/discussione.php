@@ -19,20 +19,9 @@ if ($id <= 0) {
   exit();
 }
 
-// ── Gestione nuova risposta ──
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rispondi') {
-  $corpo = trim($_POST['corpo'] ?? '');
-  if ($corpo !== '') {
-    $sql = "INSERT INTO risposte (corpo, domanda, dottore, data_risposta) VALUES (?, ?, ?, NOW())";
-    $ins = $connessione->prepare($sql);
-    $ins->execute([$corpo, $id, $_SESSION['utente']]);
-  }
-  header("Location: discussione.php?id=$id");
-  exit();
-}
-
-// ── Fetch domanda ──
-$sql = "SELECT titolo, corpo, data_domanda,dottori.nome AS nomeD, cognome, sesso, foto_profilo, specializzazioni.nome AS nomeS
+// ── Fetch domanda (aggiunti i filtri) ──
+$sql = "SELECT titolo, corpo, data_domanda,dottori.nome AS nomeD, cognome, sesso, foto_profilo, specializzazioni.nome AS nomeS,
+               specializzazione_filtro, anni_exp_filtro, ospedale_filtro
         FROM domande 
         JOIN dottori ON dottore = id_dottore
         JOIN specializzazioni ON specializzazione = codice
@@ -43,6 +32,51 @@ $domanda = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$domanda) {
   header("Location: home.php");
+  exit();
+}
+
+// ── Controllo Requisiti Utente Loggato ──
+$sqlUtente = "SELECT specializzazione, data_inizio_lavoro, ospedale FROM dottori WHERE id_dottore = ?";
+$stmtUtente = $connessione->prepare($sqlUtente);
+$stmtUtente->execute([$_SESSION['utente']]);
+$datiUtente = $stmtUtente->fetch(PDO::FETCH_ASSOC);
+
+$puo_rispondere = true;
+
+// Controllo Specializzazione
+if (!empty($domanda['specializzazione_filtro']) && $domanda['specializzazione_filtro'] != $datiUtente['specializzazione']) {
+  $puo_rispondere = false;
+}
+
+// Controllo Ospedale
+if (!empty($domanda['ospedale_filtro']) && $domanda['ospedale_filtro'] != $datiUtente['ospedale']) {
+  $puo_rispondere = false;
+}
+
+// Controllo Anni Esperienza
+if (!empty($domanda['anni_exp_filtro'])) {
+  $anni_utente = 0;
+  if (!empty($datiUtente['data_inizio_lavoro'])) {
+    $inizio = new DateTime($datiUtente['data_inizio_lavoro']);
+    $oggi = new DateTime();
+    $anni_utente = $oggi->diff($inizio)->y;
+  }
+  if ($anni_utente < $domanda['anni_exp_filtro']) {
+    $puo_rispondere = false;
+  }
+}
+
+// ── Gestione nuova risposta (ora protetta dai requisiti) ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rispondi') {
+  if ($puo_rispondere) {
+    $corpo = trim($_POST['corpo'] ?? '');
+    if ($corpo !== '') {
+      $sql = "INSERT INTO risposte (corpo, domanda, dottore, data_risposta) VALUES (?, ?, ?, NOW())";
+      $ins = $connessione->prepare($sql);
+      $ins->execute([$corpo, $id, $_SESSION['utente']]);
+    }
+  }
+  header("Location: discussione.php?id=$id");
   exit();
 }
 
@@ -574,21 +608,29 @@ $risposte = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php endif; ?>
       </div>
 
-      <!-- INPUT RISPOSTA -->
-      <div class="reply-input-area">
-        <form method="POST" action="discussione.php?id=<?= $id ?>">
-          <input type="hidden" name="action" value="rispondi">
-          <div class="reply-input-row">
-            <textarea class="reply-textarea" name="corpo" id="replyText" rows="1" placeholder="Scrivi la tua risposta…"
-              required></textarea>
-            <button type="submit" class="send-btn" title="Invia risposta">
-              <svg viewBox="0 0 24 24">
-                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-              </svg>
-            </button>
-          </div>
-        </form>
-      </div>
+      <?php if ($puo_rispondere): ?>
+        <div class="reply-input-area">
+          <form method="POST" action="discussione.php?id=<?= $id ?>">
+            <input type="hidden" name="action" value="rispondi">
+            <div class="reply-input-row">
+              <textarea class="reply-textarea" name="corpo" id="replyText" rows="1" placeholder="Scrivi la tua risposta…"
+                required></textarea>
+              <button type="submit" class="send-btn" title="Invia risposta">
+                <svg viewBox="0 0 24 24">
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                </svg>
+              </button>
+            </div>
+          </form>
+        </div>
+      <?php else: ?>
+        <div class="reply-input-area"
+          style="background: #fef2f2; border-top: 1px solid #fca5a5; padding: 16px; text-align: center;">
+          <p style="color: #b91c1c; font-size: 13.5px; font-weight: 500;">
+            Non puoi rispondere a questa discussione perché non soddisfi i requisiti impostati dall'autore.
+          </p>
+        </div>
+      <?php endif; ?>
 
     </div><!-- /chat-left -->
 

@@ -114,9 +114,10 @@ catch (PDOException $e) {
             padding: 7px 16px;
             border-radius: 10px;
             background: var(--teal-lt);
-            border: 1.5px solid rgba(15,159,142,.25);
+            border: 1.5px solid rgba(15, 159, 142, .25);
             transition: all .2s;
         }
+
         .edit-profile-btn:hover {
             background: #d1f5f1;
             border-color: var(--teal);
@@ -548,6 +549,37 @@ catch (PDOException $e) {
                 position: static;
             }
         }
+
+        .btn-logout {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #f8d7da;
+            /* Rosso chiarissimo */
+            color: #b02a37;
+            /* Rosso scuro per il testo */
+            text-decoration: none;
+            border-radius: 50px;
+            /* Arrotondato "pill" */
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .btn-logout:hover {
+            background-color: #b02a37;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(176, 42, 55, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-logout .icon {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
     </style>
 </head>
 
@@ -564,8 +596,8 @@ catch (PDOException $e) {
         <a href="modifica_profilo.php" class="edit-profile-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                 stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
             Modifica profilo
         </a>
@@ -606,7 +638,7 @@ catch (PDOException $e) {
                         </div>
                         <div class="pstat">
                             <span class="pstat-label">Esperienza</span>
-                            <span class="pstat-val">' . $profilo["data_inizio_lavoro"] . ' Anni</span>
+                            <span class="pstat-val">' . (date('Y') - date('Y', strtotime($profilo["data_inizio_lavoro"]))) . ' anni</span>
                         </div>
                         <div class="pstat">
                             <span class="pstat-label">Post pubblicati</span>
@@ -615,6 +647,7 @@ catch (PDOException $e) {
                         ';
                     }
                     ?>
+                    <a href="login.php" class="btn-logout"><span class="icon"></span> Esci dal Profilo</a>
                 </div>
             </div>
     </div>

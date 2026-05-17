@@ -17,17 +17,13 @@
     }
     $errore = false;
     if(isset($_SESSION["errore"]) && $_SESSION["errore"] == -1){
-        echo "<script>console.log('bah');</script>";
         $errore = true;
         session_unset();
     }
 
     if (isset($_SESSION['utente']) || isset($_SESSION['accesso'])) {
-        echo "<script>console.log('cia siamo qua');</script>";
         session_unset();
     }
-        
-    echo "<script>console.log('che ne so');</script>";
 ?>
 
 <!DOCTYPE html>
@@ -643,7 +639,7 @@
     <div class="auth-form-side">
         <div class="form-inner">
 
-            <a href="index.html" class="logo">
+            <a href="index.php" class="logo">
                 <div class="logo-mark">✚</div>
                 <div class="logo-text">MedicoForum</div>
             </a>

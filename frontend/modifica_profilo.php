@@ -18,10 +18,14 @@ $successo = false;
 
 // ── Gestione salvataggio ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $stmt_old = $connessione->prepare("SELECT foto_profilo FROM dottori WHERE id_dottore = ?");
+  $stmt_old->execute([$_SESSION['utente']]);
+  $dottore_attuale = $stmt_old->fetch(PDO::FETCH_ASSOC);
+
   $nome = trim($_POST['nome'] ?? '');
   $cognome = trim($_POST['cognome'] ?? '');
   $biografia = trim($_POST['biografia'] ?? '');
-  $data_inizio_lavoro = isset($_POST['data_inizio_lavoro']) && $_POST['data_inizio_lavoro'] !== '' ? (int) $_POST['data_inizio_lavoro'] : null;
+  $data_inizio_lavoro = isset($_POST['data_inizio_lavoro']) && $_POST['data_inizio_lavoro'] !== '' ? $_POST['data_inizio_lavoro'] : null;
   $ospedale = isset($_POST['ospedale']) && $_POST['ospedale'] !== '' ? (int) $_POST['ospedale'] : null;
   $specializzaz = trim($_POST['specializzazione'] ?? '');
 
@@ -579,9 +583,10 @@ $ospedali = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
               maxlength="100">
           </div>
           <div class="field">
-            <label class="field-label">Età</label>
-            <input type="text" value="<?= htmlspecialchars($dottore['data_nascita'] ?? '—') ?>" readonly>
-            <span class="field-hint">L'età non è modificabile.</span>
+            <label class="field-label">Data di nascita</label>
+            <input type="date" id="data_nascita" value="<?= htmlspecialchars($dottore['data_nascita'] ?? '—') ?>"
+              readonly>
+            <span class="field-hint">La data di nascita non è modificabile.</span>
           </div>
           <div class="field">
             <label class="field-label">Sesso</label>
@@ -732,6 +737,45 @@ $ospedali = $stmt_osp->fetchAll(PDO::FETCH_ASSOC);
         reader.readAsDataURL(this.files[0]);
       }
     });
+
+    // ── Controllo data inizio lavoro rispetto alla data di nascita ──
+    let today = new Date();
+    let todayStr = today.toISOString().split('T')[0];
+
+    let dataNascita = document.getElementById('data_nascita');
+    let dataLavoro = document.getElementById('data_inizio_lavoro');
+
+    if (dataLavoro) {
+      // Il lavoro non può essere iniziato nel futuro rispetto a oggi
+      dataLavoro.setAttribute('max', todayStr);
+
+      // Poiché la data di nascita nel profilo è fissa (readonly), 
+      // calcoliamo e impostiamo subito il limite 'min' del calendario al caricamento della pagina
+      if (dataNascita && dataNascita.value && dataNascita.value !== '—') {
+        let birthDate = new Date(dataNascita.value);
+        let minLavoro = new Date(birthDate.getFullYear() + 24, birthDate.getMonth(), birthDate.getDate());
+        let minLavoroStr = minLavoro.toISOString().split('T')[0];
+
+        dataLavoro.setAttribute('min', minLavoroStr);
+
+        // Controllo iniziale nel caso in cui il valore salvato a DB sia già non valido
+        if (dataLavoro.value && dataLavoro.value < minLavoroStr) {
+          dataLavoro.setCustomValidity("La data di inizio lavoro deve essere almeno 24 anni successiva alla data di nascita.");
+        }
+      }
+
+      // Controllo dinamico durante la digitazione/modifica
+      dataLavoro.addEventListener('input', function () {
+        if (dataNascita && dataNascita.value && dataNascita.value !== '—') {
+          let minLavoroStr = this.getAttribute('min');
+          if (minLavoroStr && this.value < minLavoroStr) {
+            this.setCustomValidity("La data di inizio lavoro deve essere almeno 24 anni successiva alla data di nascita.");
+          } else {
+            this.setCustomValidity("");
+          }
+        }
+      });
+    }
   </script>
 
 </body>

@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.1.1
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Creato il: Mag 07, 2026 alle 10:54
--- Versione del server: 10.4.21-MariaDB
--- Versione PHP: 8.0.10
+-- Creato il: Mag 17, 2026 alle 21:51
+-- Versione del server: 10.4.32-MariaDB
+-- Versione PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -30,69 +30,70 @@ SET time_zone = "+00:00";
 CREATE TABLE `credenziali` (
   `id_credenziali` int(11) NOT NULL,
   `username` varchar(20) NOT NULL,
-  `password` varchar(20) NOT NULL,
+  `password` varchar(255) DEFAULT NULL,
   `dottore` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dump dei dati per la tabella `credenziali`
 --
 
 INSERT INTO `credenziali` (`id_credenziali`, `username`, `password`, `dottore`) VALUES
-(1, 'admin', 'admin', 1),
-(2, 'utentex', 'utentex', 2),
-(3, 'luca.verdi', 'Verdi2026', 3),
-(4, 'elena.romano', 'Romano2026', 4),
-(5, 'alessandro.colombo', 'Colombo2026', 5),
-(6, 'martina.ricci', 'Ricci2026', 6),
-(7, 'francesco.marino', 'Marino2026', 7),
-(8, 'chiara.greco', 'Greco2026', 8),
-(9, 'matteo.gallo', 'Gallo2026', 9),
-(10, 'sara.conti', 'Conti2026', 10),
-(11, 'andrea.esposito', 'Esposito2026', 11),
-(12, 'valentina.de luca', 'De Luca2026', 12),
-(13, 'davide.costa', 'Costa2026', 13),
-(14, 'silvia.giordano', 'Giordano2026', 14),
-(15, 'marco.rizzo', 'Rizzo2026', 15),
-(16, 'francesca.lombardi', 'Lombardi2026', 16),
-(17, 'lorenzo.moretti', 'Moretti2026', 17),
-(18, 'anna.barbieri', 'Barbieri2026', 18),
-(19, 'gabriele.fontana', 'Fontana2026', 19),
-(20, 'elisa.russo', 'Russo2026', 20),
-(21, 'simone.santoro', 'Santoro2026', 21),
-(22, 'federica.caruso', 'Caruso2026', 22),
-(23, 'nicola.mariani', 'Mariani2026', 23),
-(24, 'alessia.ferrara', 'Ferrara2026', 24),
-(25, 'daniele.galli', 'Galli2026', 25),
-(26, 'roberta.martini', 'Martini2026', 26),
-(27, 'emanuele.leone', 'Leone2026', 27),
-(28, 'marta.longo', 'Longo2026', 28),
-(29, 'giacomo.pellegrini', 'Pellegrini2026', 29),
-(30, 'ilaria.serra', 'Serra2026', 30),
-(31, 'roberto.conte', 'Conte2026', 31),
-(32, 'laura.fiore', 'Fiore2026', 32),
-(33, 'stefano.vitale', 'Vitale2026', 33),
-(34, 'eleonora.de angelis', 'De Angelis2026', 34),
-(35, 'paolo.farina', 'Farina2026', 35),
-(36, 'beatrice.gatti', 'Gatti2026', 36),
-(37, 'antonio.monti', 'Monti2026', 37),
-(38, 'irene.piras', 'Piras2026', 38),
-(39, 'enrico.ferri', 'Ferri2026', 39),
-(40, 'giorgia.sorrentino', 'Sorrentino2026', 40),
-(41, 'giovanni.basile', 'Basile2026', 41),
-(42, 'alice.testa', 'Testa2026', 42),
-(43, 'federico.riva', 'Riva2026', 43),
-(44, 'camilla.silvestri', 'Silvestri2026', 44),
-(45, 'filippo.mazza', 'Mazza2026', 45),
-(46, 'michela.villa', 'Villa2026', 46),
-(47, 'riccardo.parisi', 'Parisi2026', 47),
-(48, 'sofia.donati', 'Donati2026', 48),
-(49, 'valerio.d\'amico', 'D\'Amico2026', 49),
-(50, 'veronica.ferrero', 'Ferrero2026', 50),
-(69, 'Torrte', '$2y$10$ABzCtfSTr/xDR', 59),
-(70, 'gg', '$2y$10$dnHccnUHEsLvM', 60),
-(71, 'auriii', '$2y$10$LF./hJPP4FyBx', 61),
-(72, 'Gigione', '$2y$10$V/VaYBUXFC9VR', 62);
+(1, 'admin', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 1),
+(2, 'utentex', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 2),
+(3, 'luca.verdi', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 3),
+(4, 'elena.romano', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 4),
+(5, 'alessandro.colombo', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 5),
+(6, 'martina.ricci', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 6),
+(7, 'francesco.marino', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 7),
+(8, 'chiara.greco', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 8),
+(9, 'matteo.gallo', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 9),
+(10, 'sara.conti', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 10),
+(11, 'andrea.esposito', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 11),
+(12, 'valentina.de luca', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 12),
+(13, 'davide.costa', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 13),
+(14, 'silvia.giordano', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 14),
+(15, 'marco.rizzo', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 15),
+(16, 'francesca.lombardi', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 16),
+(17, 'lorenzo.moretti', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 17),
+(18, 'anna.barbieri', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 18),
+(19, 'gabriele.fontana', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 19),
+(20, 'elisa.russo', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 20),
+(21, 'simone.santoro', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 21),
+(22, 'federica.caruso', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 22),
+(23, 'nicola.mariani', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 23),
+(24, 'alessia.ferrara', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 24),
+(25, 'daniele.galli', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 25),
+(26, 'roberta.martini', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 26),
+(27, 'emanuele.leone', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 27),
+(28, 'marta.longo', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 28),
+(29, 'giacomo.pellegrini', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 29),
+(30, 'ilaria.serra', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 30),
+(31, 'roberto.conte', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 31),
+(32, 'laura.fiore', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 32),
+(33, 'stefano.vitale', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 33),
+(34, 'eleonora.de angelis', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 34),
+(35, 'paolo.farina', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 35),
+(36, 'beatrice.gatti', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 36),
+(37, 'antonio.monti', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 37),
+(38, 'irene.piras', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 38),
+(39, 'enrico.ferri', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 39),
+(40, 'giorgia.sorrentino', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 40),
+(41, 'giovanni.basile', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 41),
+(42, 'alice.testa', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 42),
+(43, 'federico.riva', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 43),
+(44, 'camilla.silvestri', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 44),
+(45, 'filippo.mazza', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 45),
+(46, 'michela.villa', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 46),
+(47, 'riccardo.parisi', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 47),
+(48, 'sofia.donati', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 48),
+(49, 'valerio.d\'amico', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 49),
+(50, 'veronica.ferrero', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 50),
+(74, '1234567890', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 64),
+(75, 'gio', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 65),
+(76, 'Pietro', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 66),
+(77, 'Gianna', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 67),
+(78, 'aurix', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 68);
 
 -- --------------------------------------------------------
 
@@ -109,7 +110,7 @@ CREATE TABLE `domande` (
   `anni_exp_filtro` int(11) DEFAULT NULL,
   `ospedale_filtro` int(11) DEFAULT NULL,
   `dottore` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dump dei dati per la tabella `domande`
@@ -146,14 +147,14 @@ CREATE TABLE `dottori` (
   `specializzazione` int(11) NOT NULL,
   `ospedale` int(11) NOT NULL,
   `biografia` varchar(500) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dump dei dati per la tabella `dottori`
 --
 
 INSERT INTO `dottori` (`id_dottore`, `nome`, `cognome`, `sesso`, `data_nascita`, `data_inizio_lavoro`, `foto_profilo`, `specializzazione`, `ospedale`, `biografia`) VALUES
-(1, 'Mario', 'Rossi', 'm', '1981-05-03', '2011-05-03', 'default_m.jpg', 1, 1, 'Dirigente Medico presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureato con lode all\'Università degli Studi di Milano, vanta 15 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolto nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
+(1, 'Mario', 'Rossi', 'm', '1981-05-03', '2005-05-03', 'default_m.jpg', 11, 1, 'Dirigente Medico presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureato con lode all\'Università degli Studi di Milano, vanta 15 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolto nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
 (2, 'Giulia', 'Bianchi', 'f', '1988-05-03', '2018-05-03', 'default_f.jpg', 2, 2, 'Dirigente Medica presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureata con lode all\'Università degli Studi di Milano, vanta 8 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolta nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
 (3, 'Luca', 'Verdi', 'm', '1974-05-03', '2004-05-03', 'default_m.jpg', 3, 3, 'Dirigente Medico presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureato con lode all\'Università degli Studi di Milano, vanta 22 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolto nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
 (4, 'Elena', 'Romano', 'f', '1985-05-03', '2014-05-03', 'default_f.jpg', 4, 4, 'Dirigente Medica presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureata con lode all\'Università degli Studi di Milano, vanta 12 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolta nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
@@ -203,10 +204,11 @@ INSERT INTO `dottori` (`id_dottore`, `nome`, `cognome`, `sesso`, `data_nascita`,
 (48, 'Sofia', 'Donati', '', '1973-05-03', '2003-05-03', 'default_f.jpg', 8, 3, 'Dirigente Medico presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureato con lode all\'Università degli Studi di Milano, vanta 23 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolto nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
 (49, 'Valerio', 'D\'Amico', '', '1980-05-03', '2010-05-03', 'default_m.jpg', 9, 4, 'Dirigente Medico presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureato con lode all\'Università degli Studi di Milano, vanta 16 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolto nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
 (50, 'Veronica', 'Ferrero', 'f', '1989-05-03', '2019-05-03', 'default_f.jpg', 10, 5, 'Dirigente Medica presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureata con lode all\'Università degli Studi di Milano, vanta 7 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolta nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
-(59, 'Iginio', 'Massari', 'm', '1999-02-03', '2026-05-03', 'default_m.jpg', 10, 6, NULL),
-(60, 'gg', 'gg', 'm', '2000-11-11', '2000-11-11', 'default_m.jpg', 12, 5, NULL),
-(61, 'Aurora', 'Masenello', 'f', '2007-04-29', '0000-00-00', 'dottore_61_1777877928.jpg', 11, 4, 'Studentessa che sta facendo tirocinio all\'Ospedale di Treviso (Poco raccomandabile)'),
-(62, 'Gigio', 'Donnarumma', 'm', '1999-02-11', '2024-03-22', 'default_m.jpg', 13, 10, NULL);
+(64, 'Giovanni', 'totti', 'm', '1900-01-01', '1970-01-01', 'default_m.jpg', 11, 10, NULL),
+(65, 'Giovanni', 'Nardin1', 'm', '1900-05-06', '2000-08-07', 'default_m.jpg', 20, 13, NULL),
+(66, 'Pietro', 'Pietro', 'm', '1991-01-01', '2000-01-01', 'default_m.jpg', 16, 8, NULL),
+(67, 'Gianna', 'Giorgi', 'f', '2000-05-04', '1990-06-04', 'default_f.jpg', 12, 7, NULL),
+(68, 'Auri', 'ska', 'm', '2000-04-29', '2024-04-29', 'default_m.jpg', 12, 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -221,7 +223,7 @@ CREATE TABLE `ospedali` (
   `citta` varchar(50) NOT NULL,
   `via` varchar(50) NOT NULL,
   `civico` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dump dei dati per la tabella `ospedali`
@@ -256,7 +258,7 @@ CREATE TABLE `risposte` (
   `data_risposta` date DEFAULT current_timestamp(),
   `dottore` int(11) NOT NULL,
   `domanda` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dump dei dati per la tabella `risposte`
@@ -289,7 +291,7 @@ CREATE TABLE `specializzazioni` (
   `codice` int(11) NOT NULL,
   `nome` varchar(50) NOT NULL,
   `descrizione` varchar(500) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dump dei dati per la tabella `specializzazioni`
@@ -373,7 +375,7 @@ ALTER TABLE `specializzazioni`
 -- AUTO_INCREMENT per la tabella `credenziali`
 --
 ALTER TABLE `credenziali`
-  MODIFY `id_credenziali` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
+  MODIFY `id_credenziali` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=79;
 
 --
 -- AUTO_INCREMENT per la tabella `domande`
@@ -385,7 +387,7 @@ ALTER TABLE `domande`
 -- AUTO_INCREMENT per la tabella `dottori`
 --
 ALTER TABLE `dottori`
-  MODIFY `id_dottore` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=63;
+  MODIFY `id_dottore` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
 
 --
 -- AUTO_INCREMENT per la tabella `ospedali`

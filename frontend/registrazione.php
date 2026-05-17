@@ -516,26 +516,6 @@ try {
             margin-top: 8px;
         }
 
-        .pwd-bar {
-            flex: 1;
-            height: 3px;
-            background: var(--border);
-            border-radius: 100px;
-            transition: background 0.3s;
-        }
-
-        .pwd-bar.weak {
-            background: #f87171;
-        }
-
-        .pwd-bar.medium {
-            background: #fbbf24;
-        }
-
-        .pwd-bar.strong {
-            background: var(--teal);
-        }
-
         .pwd-label {
             font-size: 11px;
             color: var(--muted);
@@ -828,6 +808,24 @@ try {
         .foto-btn:hover {
             background: #7bdee1;
         }
+
+        .input-wrap.error input#username {
+            border-color: #f87171 !important;
+            background-color: #fef2f2 !important;
+            color: #b91c1c !important;
+        }
+
+        .status-icon {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+        }
+
+        input#username {
+            padding-right: 38px !important;
+        }
     </style>
 </head>
 
@@ -880,7 +878,7 @@ try {
         <div class="auth-form-side">
             <div class="form-inner">
 
-                <a href="index.html" class="logo">
+                <a href="Login.php" class="logo">
                     <div class="logo-mark">✚</div>
                     <div class="logo-text">MedicoForum</div>
                 </a>
@@ -945,11 +943,13 @@ try {
 
                         <div class="field">
                             <label for="username">Username</label>
-                            <div class="input-wrap">
+                            <div class="input-wrap" id="username-wrap">
                                 <span class="input-icon">@</span>
                                 <input type="text" id="username" name="username" placeholder="es. m.rossi" required>
+                                <span class="status-icon" id="username-success" style="display: none;">✅</span>
+                                <span class="status-icon" id="username-error" style="display: none;">❌</span>
                             </div>
-                            <p class="input-hint">Sarà il tuo identificativo nella community.</p>
+                            <p class="input-hint" id="username-hint">Sarà il tuo identificativo nella community.</p>
                         </div>
 
                         <div class="btn-row">
@@ -1036,15 +1036,13 @@ try {
                             <div class="field">
                                 <label for="data_nascita">Data di Nascita</label>
                                 <div class="input-wrap">
-
-                                    <input type="date" id="data_nascita" name="data_nascita" required>
+                                    <input type="date" id="data_nascita" name="data_nascita" min="1950-01-01" required>
                                 </div>
                             </div>
 
                             <div class="field">
                                 <label for="data_inizio_lavoro">Inizio Lavoro</label>
                                 <div class="input-wrap">
-
                                     <input type="date" id="data_inizio_lavoro" name="data_inizio_lavoro" required>
                                 </div>
                             </div>
@@ -1055,7 +1053,6 @@ try {
                             <button type="button" class="btn-next" onclick="nextStep(2)">Continua →</button>
                         </div>
                     </div>
-
                     <!-- ─ STEP 3: Sicurezza ─ -->
                     <div class="form-panel" id="panel3">
 
@@ -1068,22 +1065,6 @@ try {
                                 <button type="button"
                                     style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;"
                                     id="togglePwd">👁</button>
-                            </div>
-                            <div class="pwd-strength">
-                                <div class="pwd-bar" id="bar1"></div>
-                                <div class="pwd-bar" id="bar2"></div>
-                                <div class="pwd-bar" id="bar3"></div>
-                                <div class="pwd-bar" id="bar4"></div>
-                            </div>
-                            <p class="pwd-label" id="pwdLabel">Minimo 8 caratteri, una maiuscola e un numero.</p>
-                        </div>
-
-                        <div class="field">
-                            <label for="conferma">Conferma Password</label>
-                            <div class="input-wrap">
-                                <span class="input-icon">🔑</span>
-                                <input type="password" id="conferma" name="conferma" placeholder="Ripeti la password"
-                                    required>
                             </div>
                         </div>
 
@@ -1121,7 +1102,7 @@ try {
     </div>
 
     <script>
-        document.getElementById('foto').addEventListener('change', function() {
+        document.getElementById('foto').addEventListener('change', function () {
             const label = document.getElementById('foto-label');
             label.textContent = this.files[0] ? this.files[0].name : 'Scegli un\'immagine…';
         });
@@ -1178,23 +1159,6 @@ try {
             currentStep = n;
         }
 
-        // ── Password strength ──
-        function checkPwd(val) {
-            const bars = [1, 2, 3, 4].map(i => document.getElementById('bar' + i));
-            const label = document.getElementById('pwdLabel');
-            const scores = [val.length >= 8, /[A-Z]/.test(val), /[0-9]/.test(val), /[^a-zA-Z0-9]/.test(val)];
-            const score = scores.filter(Boolean).length;
-            const levels = ['', 'weak', 'weak', 'medium', 'strong'];
-            const labels = ['', 'Troppo corta', 'Debole', 'Discreta', 'Ottima! 🔒'];
-
-            bars.forEach((b, i) => {
-                b.className = 'pwd-bar';
-                if (i < score) b.classList.add(levels[score]);
-            });
-
-            label.textContent = val.length ? labels[score] : 'Minimo 8 caratteri, una maiuscola e un numero.';
-        }
-
         // ── Toggle password ──
         document.getElementById('togglePwd').addEventListener('click', function () {
             const pwd = document.getElementById('password');
@@ -1207,6 +1171,180 @@ try {
         setTimeout(() => document.getElementById('visualBg').classList.add('zoomed'), 100);
     </script>
 
+    <script>
+        // 1. Inizializzazione date e vincoli logici
+        document.addEventListener("DOMContentLoaded", function () {
+            let today = new Date();
+            let todayStr = today.toISOString().split('T')[0];
+
+            let dataNascita = document.getElementById('data_nascita');
+            let dataLavoro = document.getElementById('data_inizio_lavoro');
+
+            let maxDataNascita = new Date(today.getFullYear() - 24, today.getMonth(), today.getDate());
+            let maxDataNascitaStr = maxDataNascita.toISOString().split('T')[0];
+
+            if (dataNascita) {
+                dataNascita.setAttribute('max', maxDataNascitaStr);
+
+                dataNascita.addEventListener('input', function () {
+                    if (this.value > maxDataNascitaStr) {
+                        this.setCustomValidity("Non hai l'età minima (24 anni) per aver conseguito una laurea in medicina.");
+                    } else {
+                        this.setCustomValidity("");
+                    }
+                });
+            }
+
+            if (dataLavoro) {
+                dataLavoro.setAttribute('max', todayStr);
+
+                dataLavoro.addEventListener('input', function () {
+                    if (dataNascita.value) {
+                        let minLavoroStr = this.getAttribute('min');
+                        if (minLavoroStr && this.value < minLavoroStr) {
+                            this.setCustomValidity("La data di inizio lavoro deve essere almeno 24 anni successiva alla data di nascita.");
+                        } else {
+                            this.setCustomValidity("");
+                        }
+                    }
+                });
+            }
+
+            if (dataNascita && dataLavoro) {
+                dataNascita.addEventListener('change', function () {
+                    if (this.value) {
+                        let birthDate = new Date(this.value);
+                        // Calcolo: inizio lavoro = data di nascita + 24 anni
+                        let minLavoro = new Date(birthDate.getFullYear() + 24, birthDate.getMonth(), birthDate.getDate());
+                        let minLavoroStr = minLavoro.toISOString().split('T')[0];
+
+                        dataLavoro.setAttribute('min', minLavoroStr);
+
+                        // Rivalida il campo lavoro se era già stato compilato prima della nascita
+                        if (dataLavoro.value && dataLavoro.value < minLavoroStr) {
+                            dataLavoro.setCustomValidity("La data di inizio lavoro deve essere almeno 24 anni successiva alla data di nascita.");
+                        } else if (dataLavoro.value) {
+                            dataLavoro.setCustomValidity("");
+                        }
+                    }
+                });
+            }
+
+            // --- CONTROLLO USERNAME IN TEMPO REALE ---
+            let usernameInput = document.getElementById('username');
+            let usernameWrap = document.getElementById('username-wrap');
+            let userSuccessIcon = document.getElementById('username-success');
+            let userErrorIcon = document.getElementById('username-error');
+            let userHint = document.getElementById('username-hint');
+            let userTimer;
+
+            if (usernameInput) {
+                usernameInput.addEventListener('input', function () {
+                    clearTimeout(userTimer); // Resetta il timer ad ogni tasto premuto
+                    let val = this.value.trim();
+
+                    // Ripristina l'aspetto originale della casella
+                    usernameWrap.classList.remove('error');
+                    userSuccessIcon.style.display = 'none';
+                    userErrorIcon.style.display = 'none';
+                    userHint.textContent = "Sarà il tuo identificativo nella community.";
+                    userHint.style.color = "";
+                    usernameInput.setCustomValidity(""); // Sblocca il form
+
+                    if (val.length > 0) {
+                        // Attende 400ms dopo che l'utente ha smesso di digitare per interrogare il DB
+                        userTimer = setTimeout(() => {
+                            fetch('check_username.php?username=' + encodeURIComponent(val))
+                                .then(r => r.json())
+                                .then(data => {
+                                    if (data.available) {
+                                        // Username Libero
+                                        userSuccessIcon.style.display = 'block';
+                                        userHint.textContent = "Username disponibile!";
+                                        userHint.style.color = "#0f9f8e";
+                                    } else {
+                                        // Username Occupato
+                                        userErrorIcon.style.display = 'block';
+                                        usernameWrap.classList.add('error');
+                                        userHint.textContent = "Username già in uso. Scegline un altro.";
+                                        userHint.style.color = "#f87171";
+                                        // Blocca il passaggio allo step 2 con un errore personalizzato
+                                        usernameInput.setCustomValidity("Questo username è già in uso.");
+                                    }
+                                })
+                                .catch(err => console.error("Errore controllo username", err));
+                        }, 400);
+                    }
+                });
+            }
+        });
+
+        // 2. Funzione per andare avanti
+        function nextStep(currentStep) {
+            // Trova il pannello in cui ci troviamo ora (es. panel1, panel2...)
+            let currentPanel = document.getElementById('panel' + currentStep);
+
+            // Trova tutti gli input e i select dentro QUESTO pannello
+            let inputs = currentPanel.querySelectorAll('input, select');
+            let allValid = true;
+
+            // Controlla ogni singolo campo del pannello attuale
+            for (let i = 0; i < inputs.length; i++) {
+                if (!inputs[i].checkValidity()) {
+                    inputs[i].reportValidity(); // Fa apparire il fumetto rosso di errore
+                    allValid = false;
+                    break; // Si ferma al primo errore trovato
+                }
+            }
+
+            // Se tutto è compilato correttamente, vai al prossimo step
+            if (allValid) {
+                // Nascondi il pannello corrente
+                currentPanel.classList.remove('active');
+
+                // Mostra il pannello successivo
+                let nextPanel = document.getElementById('panel' + (currentStep + 1));
+                if (nextPanel) {
+                    nextPanel.classList.add('active');
+                }
+
+                // Aggiorna i numeri/pallini in alto (diventano verdi/teal)
+                document.getElementById('s' + currentStep).classList.remove('active');
+                document.getElementById('s' + currentStep).classList.add('done');
+
+                let line = document.getElementById('line' + currentStep);
+                if (line) line.classList.add('done');
+
+                let nextIndicator = document.getElementById('s' + (currentStep + 1));
+                if (nextIndicator) nextIndicator.classList.add('active');
+            }
+        }
+
+        // 3. Funzione per tornare indietro
+        function prevStep(currentStep) {
+            // Nascondi il pannello corrente e mostra il precedente
+            document.getElementById('panel' + currentStep).classList.remove('active');
+            document.getElementById('panel' + (currentStep - 1)).classList.add('active');
+
+            // Aggiorna i numeri/pallini in alto
+            document.getElementById('s' + currentStep).classList.remove('active');
+
+            let prevIndicator = document.getElementById('s' + (currentStep - 1));
+            if (prevIndicator) {
+                prevIndicator.classList.add('active');
+                prevIndicator.classList.remove('done');
+            }
+
+            let line = document.getElementById('line' + (currentStep - 1));
+            if (line) line.classList.remove('done');
+        }
+
+        // (Opzionale) Cambia il testo del bottone della foto quando selezioni un file
+        document.getElementById('foto').addEventListener('change', function (e) {
+            let fileName = e.target.files[0] ? e.target.files[0].name : "Scegli un'immagine…";
+            document.getElementById('foto-label').textContent = fileName;
+        });
+    </script>
 </body>
 
 </html>

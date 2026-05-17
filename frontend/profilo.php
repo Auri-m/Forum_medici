@@ -615,7 +615,13 @@ catch (PDOException $e) {
                 <div class="profile-cover"></div>
                 <div class="profile-info">
                     <?php
-                    $sql = "SELECT dottori.nome AS nome, cognome, sesso, biografia, data_inizio_lavoro, ospedali.nome AS nomeO, foto_profilo, specializzazioni.nome AS nomeS, COUNT(id_domanda) AS nPost FROM dottori, ospedali, specializzazioni, domande WHERE ospedale=id_ospedale AND specializzazione=codice AND domande.dottore=id_dottore AND id_dottore=?";
+                    $sql = "SELECT d.nome AS nome, d.cognome, d.sesso, d.biografia, d.data_inizio_lavoro, 
+                            o.nome AS nomeO, d.foto_profilo, s.nome AS nomeS, 
+                            (SELECT COUNT(*) FROM domande WHERE dottore = d.id_dottore) AS nPost 
+                            FROM dottori d
+                            JOIN ospedali o ON d.ospedale = o.id_ospedale
+                            JOIN specializzazioni s ON d.specializzazione = s.codice
+                            WHERE d.id_dottore = ?";
                     $profilo = $connessione->prepare($sql);
                     $profilo->execute(array($_SESSION["utente"]));
 
@@ -651,28 +657,6 @@ catch (PDOException $e) {
                 </div>
             </div>
     </div>
-
-    <!-- Area per messaggio privato se si vuole implementare
-        <div class="widget">
-            <div class="widget-header">
-                Messaggio Privato
-            </div>
-            <div class="widget-body">
-                <form action="/invia-messaggio" method="POST" class="contact-form">
-                    <input type="hidden" name="destinatario_id" value="12345">
-                    <textarea name="messaggio" placeholder="Scrivi qui il tuo messaggio per il Dr. Rossi..."
-                        required></textarea>
-                    <button type="submit" class="btn-submit">
-                        Invia Messaggio
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                        </svg>
-                    </button>
-                </form>
-            </div>
-        </div>
-    -->
 
     </aside>
 

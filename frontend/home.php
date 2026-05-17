@@ -9,7 +9,6 @@ try {
 
 if (!empty($_SESSION['utente']) && !$_SESSION["accesso"]) {
   unset($_SESSION["errore"]);
-  echo "<script>console.log('entro');</script>";
 } else {
   $username_post = $_POST["username"];
   $password_post = $_POST["password"];
@@ -21,7 +20,7 @@ if (!empty($_SESSION['utente']) && !$_SESSION["accesso"]) {
   $riga = $credenziali->fetch();
   $accesso_riuscito = false;
 
-  if ($riga && $riga['password'] === $password_post) {
+  if ($riga && password_verify($password_post, $riga['password'])) {
     $_SESSION["utente"] = $riga['dottore'];
     $_SESSION["accesso"] = false;
     $accesso_riuscito = true;
@@ -77,6 +76,46 @@ $periodo = $_GET['periodo'] ?? 'tutto';
 $periodo_validi = ['oggi', '7giorni', '30giorni', 'tutto'];
 if (!in_array($periodo, $periodo_validi))
   $periodo = 'tutto';
+
+// ── Slide hero da cache RSS ──
+$HERO_IMGS = [
+  'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=1600&q=80',
+  'https://images.unsplash.com/photo-1504813184591-01572f98c85f?w=1600&q=80',
+  'https://images.unsplash.com/photo-1551076805-e1869033e561?w=1600&q=80',
+  'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=1600&q=80',
+  'https://images.unsplash.com/photo-1584982751601-97dcc096659c?w=1600&q=80',
+  'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=1600&q=80',
+];
+$SLIDE_TAGS = ['In evidenza', 'Aggiornamento', 'Notizie mediche', 'Ricerca'];
+$SLIDE_FALLBACK = [
+  ['title'=>'Linee guida ESC 2025: novità per la pratica cardiologica','description'=>'Le raccomandazioni aggiornate della Società Europea di Cardiologia per la gestione delle malattie cardiovascolari.','url'=>'https://www.giornaledicardiologia.it/archivio/4570/articoli/45733/','source'=>'Giornale di Cardiologia'],
+  ['title'=>'AIFA: aggiornamento farmaci autorizzati in Italia','description'=>'Lista completa dei medicinali con schede tecniche e note AIFA aggiornate al 2025.','url'=>'https://www.aifa.gov.it','source'=>'AIFA'],
+  ['title'=>'Congresso Nazionale ANMCO 2025 — Rimini','description'=>'15-17 maggio, Rimini. Iscriviti tramite MedicoForum e ottieni crediti ECM.','url'=>'https://cardioinfo.it/congresso/anmco/2025/56-congresso-nazionale-anmco-appuntamento-a-rimini-dal-15-al-17-maggio/','source'=>'CardioInfo'],
+  ['title'=>'FDA approva nuovo inibitore per tumori HER2+','description'=>'La comunità oncologica analizza l\'impatto clinico della nuova approvazione regolatoria statunitense.','url'=>'https://www.aifa.gov.it/-/fda-approva-un-nuovo-trattamento-per-ridurre-il-rischio-di-recidive-del-cancro-al-seno','source'=>'AIFA'],
+];
+
+$cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'medicoforum_rss_v1.json';
+$heroSlides = [];
+if (file_exists($cacheFile)) {
+  $cached = @json_decode(file_get_contents($cacheFile), true);
+  if (!empty($cached['articles'])) {
+    foreach (array_slice($cached['articles'], 0, 4) as $i => $a) {
+      $heroSlides[] = [
+        'title'       => $a['title'],
+        'description' => $a['description'] ?? '',
+        'url'         => $a['url'],
+        'source'      => $a['source'] ?? '',
+        'hero_image'  => $HERO_IMGS[$i % count($HERO_IMGS)],
+      ];
+    }
+  }
+}
+if (empty($heroSlides)) {
+  foreach ($SLIDE_FALLBACK as $i => $f) {
+    $f['hero_image'] = $HERO_IMGS[$i % count($HERO_IMGS)];
+    $heroSlides[] = $f;
+  }
+}
 
 // ── Statistiche reali dal DB ──
 $stat_medici = $connessione->query("SELECT COUNT(*) FROM dottori")->fetchColumn();
@@ -544,10 +583,12 @@ $post->execute();
     /* ══════════ HERO SLIDESHOW ══════════ */
     .hero-slider {
       position: relative;
-      height: 280px;
+      height: 360px;
       overflow: hidden;
       border-bottom: 1px solid var(--border)
     }
+
+    /* Il contenitore delle slide dinamiche deve coprire l'intera area */
 
     .slide {
       position: absolute;
@@ -570,7 +611,7 @@ $post->execute();
     .slide-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to right, rgba(13, 31, 60, .82) 0%, rgba(13, 31, 60, .45) 50%, transparent 100%)
+      background: linear-gradient(to right, rgba(13, 31, 60, .90) 0%, rgba(13, 31, 60, .60) 55%, transparent 100%)
     }
 
     .slide-content {
@@ -583,7 +624,7 @@ $post->execute();
     }
 
     .slide-inner {
-      max-width: 560px
+      max-width: 680px
     }
 
     .slide-tag {
@@ -599,7 +640,9 @@ $post->execute();
       color: #5dd8cc;
       letter-spacing: .1em;
       text-transform: uppercase;
-      margin-bottom: 14px
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 3
     }
 
     .slide-tag::before {
@@ -613,9 +656,9 @@ $post->execute();
 
     .slide-title {
       font-family: 'DM Serif Display', serif;
-      font-size: clamp(22px, 2.8vw, 34px);
+      font-size: clamp(16px, 1.8vw, 24px);
       color: #fff;
-      line-height: 1.2;
+      line-height: 1.3;
       margin-bottom: 10px
     }
 
@@ -825,6 +868,33 @@ $post->execute();
 
     .widget-body {
       padding: 14px 18px
+    }
+
+    /* ══════════ SPEC-LIST SCROLLABLE ══════════ */
+    .spec-list-scroll {
+      max-height: 320px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      padding-right: 4px;
+      margin-right: -4px;
+    }
+
+    .spec-list-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .spec-list-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .spec-list-scroll::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 100px;
+    }
+
+    .spec-list-scroll::-webkit-scrollbar-thumb:hover {
+      background: var(--muted);
     }
 
     /* ══════════ LEFT: PROFILO ══════════ */
@@ -1986,7 +2056,7 @@ $post->execute();
       }
 
       .hero-slider {
-        height: 220px
+        height: 300px
       }
 
       .nav-links {
@@ -2296,8 +2366,11 @@ $post->execute();
   <!-- ══ TOP BAR ══ -->
   <div class="topbar">
     <div class="topbar-left">
-      <a href="https://www.giornaledicardiologia.it/archivio/4570/articoli/45733/">📋 Linee guida ESC 2025
-        aggiornate</a>
+      <span class="live-badge">
+        <span class="live-dot"></span>
+        Live
+      </span>
+      <a href="https://www.giornaledicardiologia.it/archivio/4570/articoli/45733/">📋 Linee guida ESC 2025 aggiornate</a>
     </div>
   </div>
 
@@ -2377,80 +2450,49 @@ $post->execute();
     </div>
   </header>
 
-  <!-- ══ HERO SLIDESHOW ══ -->
+  <!-- ══ HERO SLIDESHOW (generato in PHP da cache RSS) ══ -->
   <div class="hero-slider" id="heroSlider">
-    <div class="slide active">
-      <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=1600&q=80" alt="">
+
+    <?php foreach ($heroSlides as $i => $slide):
+      $words    = explode(' ', trim($slide['title']));
+      $lastWord = array_pop($words);
+      $titleMain = implode(' ', $words);
+      $tag       = $SLIDE_TAGS[$i % count($SLIDE_TAGS)];
+    ?>
+    <div class="slide <?= $i === 0 ? 'active' : '' ?>">
+      <img src="<?= htmlspecialchars($slide['hero_image']) ?>" alt="" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
       <div class="slide-overlay"></div>
       <div class="slide-content">
         <div class="slide-inner">
-          <div class="slide-tag">In evidenza</div>
-          <h2 class="slide-title">Nuove linee guida ESC sulla <em>fibrillazione atriale</em></h2>
-          <p class="slide-desc">L'European Society of Cardiology ha pubblicato le raccomandazioni aggiornate 2025.
-            Partecipa alla discussione con i tuoi colleghi cardiologi.</p>
-          <a href="https://www.giornaledicardiologia.it/archivio/4419/articoli/44150/" class="slide-btn">Leggi la
-            discussione →</a>
+          <div class="slide-tag"><?= htmlspecialchars($tag) ?></div>
+          <h2 class="slide-title">
+            <?= htmlspecialchars($titleMain) ?><?= $titleMain ? ' ' : '' ?><em><?= htmlspecialchars($lastWord) ?></em>
+          </h2>
+          <p class="slide-desc"><?= htmlspecialchars(mb_substr($slide['description'], 0, 160)) ?></p>
+          <a href="<?= htmlspecialchars($slide['url']) ?>" target="_blank" rel="noopener noreferrer" class="slide-btn">
+            Leggi l'articolo →
+          </a>
+          <div style="margin-top:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35)">
+            <?= htmlspecialchars($slide['source']) ?>
+          </div>
         </div>
       </div>
     </div>
-    <div class="slide">
-      <img src="https://images.unsplash.com/photo-1504813184591-01572f98c85f?w=1600&q=80" alt="">
-      <div class="slide-overlay"></div>
-      <div class="slide-content">
-        <div class="slide-inner">
-          <div class="slide-tag">Caso clinico</div>
-          <h2 class="slide-title">Diagnosi differenziale di <em>FUO</em> in paziente immunocompromesso</h2>
-          <p class="slide-desc">Un caso complesso di febbre di origine sconosciuta che ha coinvolto 12 specialisti da
-            tutta Italia. Condividi la tua esperienza.</p>
-          <a href="https://dottornaddaf.wordpress.com/2011/03/09/febbre-di-origine-sconosciuta-fuo/"
-            class="slide-btn">Partecipa →</a>
-        </div>
-      </div>
-    </div>
-    <div class="slide">
-      <img src="https://images.unsplash.com/photo-1551076805-e1869033e561?w=1600&q=80" alt="">
-      <div class="slide-overlay"></div>
-      <div class="slide-content">
-        <div class="slide-inner">
-          <div class="slide-tag">Congresso</div>
-          <h2 class="slide-title">Congresso Nazionale <em>ANMCO 2025</em> — Rimini</h2>
-          <p class="slide-desc">12-14 Aprile · Fieramilano. Iscriviti gratuitamente tramite MedicoForum e ottieni
-            crediti ECM.</p>
-          <a href="https://cardioinfo.it/congresso/anmco/2025/56-congresso-nazionale-anmco-appuntamento-a-rimini-dal-15-al-17-maggio/"
-            class="slide-btn">Iscriviti gratis →</a>
-        </div>
-      </div>
-    </div>
-    <div class="slide">
-      <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=1600&q=80" alt="">
-      <div class="slide-overlay"></div>
-      <div class="slide-content">
-        <div class="slide-inner">
-          <div class="slide-tag">Ricerca</div>
-          <h2 class="slide-title">FDA approva nuovo inibitore per <em>tumori HER2+</em></h2>
-          <p class="slide-desc">La comunità oncologica di MedicoForum sta analizzando l'impatto clinico
-            dell'approvazione. Unisciti al dibattito.</p>
-          <a href="https://www.aifa.gov.it/-/fda-approva-un-nuovo-trattamento-per-ridurre-il-rischio-di-recidive-del-cancro-al-seno"
-            class="slide-btn">Scopri di più →</a>
-        </div>
-      </div>
-    </div>
+    <?php endforeach; ?>
 
     <!-- Controls -->
     <div class="slide-controls">
-      <div class="slide-dot active" data-i="0"></div>
-      <div class="slide-dot" data-i="1"></div>
-      <div class="slide-dot" data-i="2"></div>
-      <div class="slide-dot" data-i="3"></div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <?php foreach ($heroSlides as $i => $_): ?>
+          <div class="slide-dot <?= $i === 0 ? 'active' : '' ?>" data-i="<?= $i ?>"></div>
+        <?php endforeach; ?>
+      </div>
       <div class="slide-arrows">
-        <div class="slide-arrow" id="prevSlide"><svg viewBox="0 0 24 24">
-            <polyline points="15 18 9 12 15 6" />
-          </svg></div>
-        <div class="slide-arrow" id="nextSlide"><svg viewBox="0 0 24 24">
-            <polyline points="9 18 15 12 9 6" />
-          </svg></div>
+        <div class="slide-arrow" id="prevSlide"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+        <div class="slide-arrow" id="nextSlide"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
       </div>
     </div>
+
   </div>
 
   <!-- ══ QUICK STATS ══ -->
@@ -2495,38 +2537,41 @@ $post->execute();
   <!-- ══ LAYOUT 3 COLONNE ══ -->
   <div class="page-wrapper">
 
-    <!-- ══ SIDEBAR DESTRA ══ -->
+    <!-- ══ SIDEBAR DESTRA — NEWS DINAMICHE RSS ══ -->
     <aside class="sidebar sidebar-right">
 
-      <!-- AD 1 -->
-      <div class="ad-card">
-        <div class="ad-img-wrap">
-          <span class="ad-badge">Sponsorizzato</span>
-          <img src="https://images.unsplash.com/photo-1585435557343-3b092031a831?w=600&q=75" alt="">
+      <!-- Skeleton animato durante il caricamento -->
+      <div id="news-skeleton">
+        <div class="ad-card" style="animation:newsSkeletonPulse 1.4s ease infinite">
+          <div style="height:150px;background:var(--border);border-radius:18px 18px 0 0"></div>
+          <div style="padding:14px 16px 16px;background:var(--white)">
+            <div style="height:9px;background:var(--border);border-radius:4px;margin-bottom:10px;width:35%"></div>
+            <div style="height:13px;background:var(--border);border-radius:4px;margin-bottom:6px"></div>
+            <div style="height:13px;background:var(--border);border-radius:4px;margin-bottom:6px;width:80%"></div>
+            <div style="height:13px;background:var(--border);border-radius:4px;width:55%"></div>
+          </div>
         </div>
-        <div class="ad-body">
-          <div class="ad-brand">Medscape CME</div>
-          <div class="ad-title">Aggiornamento ECM in Cardiologia Interventistica 2025</div>
-          <a href="#" class="ad-cta">Scopri il corso →</a>
-        </div>
-      </div>
-
-
-
-      <!-- AD 2 -->
-      <div class="ad-card">
-        <div class="ad-img-wrap">
-          <span class="ad-badge">Sponsorizzato</span>
-          <img src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600&q=75" alt="">
-        </div>
-        <div class="ad-body">
-          <div class="ad-brand">Humanitas Research</div>
-          <div class="ad-title">Posizioni aperte per Specialisti in Medicina d'Urgenza</div>
-          <a href="#" class="ad-cta">Candidati ora →</a>
+        <div class="ad-card" style="animation:newsSkeletonPulse 1.4s ease 0.25s infinite;margin-top:16px">
+          <div style="height:150px;background:var(--border);border-radius:18px 18px 0 0"></div>
+          <div style="padding:14px 16px 16px;background:var(--white)">
+            <div style="height:9px;background:var(--border);border-radius:4px;margin-bottom:10px;width:35%"></div>
+            <div style="height:13px;background:var(--border);border-radius:4px;margin-bottom:6px"></div>
+            <div style="height:13px;background:var(--border);border-radius:4px;margin-bottom:6px;width:80%"></div>
+            <div style="height:13px;background:var(--border);border-radius:4px;width:55%"></div>
+          </div>
         </div>
       </div>
 
+      <!-- Card news iniettate via JS -->
+      <div id="news-ads-container" style="display:none;flex-direction:column;gap:16px"></div>
 
+      <!-- Errore fallback -->
+      <div id="news-error" style="display:none;padding:20px;text-align:center;
+           background:var(--white);border:1.5px solid var(--border);border-radius:18px">
+        <div style="font-size:30px;margin-bottom:8px">📰</div>
+        <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px">Notizie non disponibili</div>
+        <div style="font-size:11px;color:var(--muted)">Riprova più tardi</div>
+      </div>
 
     </aside>
 
@@ -2658,7 +2703,7 @@ $post->execute();
           <?php endif; ?>
         </div>
         <div class="widget-body">
-          <ul class="spec-list">
+          <ul class="spec-list spec-list-scroll">
             <?php foreach ($elenco_spec_con_count as $s):
               $isActive = in_array($s['codice'], $filtri_spec);
               // Costruisce l'URL aggiungendo o rimuovendo questa specializzazione
@@ -2824,24 +2869,34 @@ $post->execute();
   </div>
 
   <script>
-    // ── Slideshow ──
-    let cur = 0;
-    const slides = document.querySelectorAll('.slide');
-    const dots = document.querySelectorAll('.slide-dot');
+    // ── Slideshow (slide già nel DOM generate da PHP) ──
+    (function() {
+      var slides = document.querySelectorAll('#heroSlider .slide');
+      var dots   = document.querySelectorAll('#heroSlider .slide-dot');
+      var cur    = 0;
+      var timer;
 
-    function goTo(n) {
-      slides[cur].classList.remove('active');
-      dots[cur].classList.remove('active');
-      cur = (n + slides.length) % slides.length;
-      slides[cur].classList.add('active');
-      dots[cur].classList.add('active');
-    }
+      function goTo(n) {
+        slides[cur].classList.remove('active');
+        dots[cur].classList.remove('active');
+        cur = (n + slides.length) % slides.length;
+        slides[cur].classList.add('active');
+        dots[cur].classList.add('active');
+      }
 
-    let timer = setInterval(() => goTo(cur + 1), 5000);
+      function startTimer() {
+        clearInterval(timer);
+        timer = setInterval(function() { goTo(cur + 1); }, 6000);
+      }
 
-    document.getElementById('nextSlide').addEventListener('click', () => { clearInterval(timer); goTo(cur + 1); timer = setInterval(() => goTo(cur + 1), 5000); });
-    document.getElementById('prevSlide').addEventListener('click', () => { clearInterval(timer); goTo(cur - 1); timer = setInterval(() => goTo(cur + 1), 5000); });
-    dots.forEach(d => d.addEventListener('click', () => { clearInterval(timer); goTo(+d.dataset.i); timer = setInterval(() => goTo(cur + 1), 5000); }));
+      document.getElementById('nextSlide').addEventListener('click', function() { clearInterval(timer); goTo(cur + 1); startTimer(); });
+      document.getElementById('prevSlide').addEventListener('click', function() { clearInterval(timer); goTo(cur - 1); startTimer(); });
+      dots.forEach(function(d) {
+        d.addEventListener('click', function() { clearInterval(timer); goTo(+this.dataset.i); startTimer(); });
+      });
+
+      startTimer();
+    })();
 
     // ── Feed tabs ──
     document.querySelectorAll('.feed-tab').forEach(t => {
@@ -2936,6 +2991,157 @@ $post->execute();
         window.location.href = 'home.php';
       }
     });
+  </script>
+
+  <!-- ══ CSS NEWS CARD SIDEBAR ══ -->
+  <style>
+    @keyframes newsSkeletonPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .news-ad-card {
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      box-shadow: 0 2px 12px rgba(13,31,60,.06);
+      transition: all .2s;
+      text-decoration: none;
+      display: block;
+      background: var(--white);
+    }
+    .news-ad-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(13,31,60,.1);
+    }
+    .news-ad-img-wrap {
+      position: relative;
+      height: 150px;
+      overflow: hidden;
+    }
+    .news-ad-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      transition: transform .4s;
+    }
+    .news-ad-card:hover .news-ad-img-wrap img { transform: scale(1.04) }
+    .news-ad-live-badge {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(15,159,142,.88);
+      color: #fff;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 5px;
+      backdrop-filter: blur(4px);
+    }
+    .news-ad-body { padding: 14px 16px 16px; }
+    .news-ad-source {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: var(--teal); margin-bottom: 5px;
+    }
+    .news-ad-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 14px; color: var(--navy);
+      line-height: 1.35; margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .news-ad-meta { font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+    .news-ad-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--navy); color: #fff;
+      font-size: 11px; font-weight: 700;
+      padding: 7px 14px; border-radius: 8px;
+      transition: background .2s;
+    }
+    .news-ad-card:hover .news-ad-cta { background: var(--teal2); }
+  </style>
+
+  <!-- ══ JS NEWS DINAMICHE SIDEBAR ══ -->
+  <script>
+  (function loadNewsAds() {
+    var skeleton  = document.getElementById('news-skeleton');
+    var container = document.getElementById('news-ads-container');
+    var errorBox  = document.getElementById('news-error');
+
+    function esc(s) {
+      return String(s || '')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // Restituisce data relativa: "Oggi", "Ieri", "2 giorni fa", oppure "15 mag"
+    function fmtDate(iso) {
+      if (!iso) return '';
+      try {
+        var d     = new Date(iso);
+        var now   = new Date();
+        var diffMs   = now - d;
+        var diffMins = Math.floor(diffMs / 60000);
+        var diffHrs  = Math.floor(diffMs / 3600000);
+        var diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1)   return 'Adesso';
+        if (diffMins < 60)  return diffMins + ' min fa';
+        if (diffHrs  < 24)  return diffHrs  + (diffHrs  === 1 ? ' ora fa'   : ' ore fa');
+        if (diffDays === 1) return 'Ieri';
+        if (diffDays < 7)   return diffDays + ' giorni fa';
+
+        // Oltre 7 giorni → data corta "15 mag"
+        return new Intl.DateTimeFormat('it-IT', { day:'2-digit', month:'short' }).format(d);
+      } catch(e) { return ''; }
+    }
+
+    function buildCard(a) {
+      var card = document.createElement('a');
+      card.className = 'news-ad-card';
+      card.href      = esc(a.url);
+      card.target    = '_blank';
+      card.rel       = 'noopener noreferrer';
+      var fb = 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&q=60';
+      var dateTxt = a.publishedAt
+        ? '<div class="news-ad-meta">🕑 ' + fmtDate(a.publishedAt) + '</div>'
+        : '';
+      card.innerHTML =
+        '<div class="news-ad-img-wrap">' +
+          '<span class="news-ad-live-badge">📰 News</span>' +
+          '<img src="' + esc(a.image || fb) + '" loading="lazy"' +
+               ' onerror="this.src=\'' + fb + '\'">' +
+        '</div>' +
+        '<div class="news-ad-body">' +
+          '<div class="news-ad-source">' + esc(a.source) + '</div>' +
+          '<div class="news-ad-title">'  + esc(a.title)  + '</div>' +
+          dateTxt +
+          '<span class="news-ad-cta">Leggi l\'articolo →</span>' +
+        '</div>';
+      return card;
+    }
+
+    fetch('NewAPI.php')
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function(data) {
+        skeleton.style.display = 'none';
+        if (!data.articles || data.articles.length === 0) {
+          errorBox.style.display = 'block';
+          return;
+        }
+        // Mostra articoli dalla posizione 4 in poi (i primi 4 sono già nel carousel)
+        // Se ce ne sono meno di 4, mostra comunque i primi 2 disponibili
+        var toShow = data.articles.length > 4
+          ? data.articles.slice(4, 6)
+          : data.articles.slice(0, 2);
+        toShow.forEach(function(a) { container.appendChild(buildCard(a)); });
+        container.style.display = 'flex';
+      })
+      .catch(function(err) {
+        console.warn('[MedicoForum] Errore news sidebar:', err);
+        skeleton.style.display = 'none';
+        errorBox.style.display = 'block';
+      });
+  })();
   </script>
 </body>
 

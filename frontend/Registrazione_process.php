@@ -1,5 +1,4 @@
 <?php
-// Includo il file di configurazione con le credenziali ($host, $db, $user, $password)
 require_once 'database.php';
 
 try {

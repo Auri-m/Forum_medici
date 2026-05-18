@@ -1,5 +1,3 @@
-markdown_content = """# MedicoForum
-
 **Progetto di Masenello Aurora e Nardin Giovanni 5^B** *Documentazione di Progetto - Versione 1.0 · Maggio 2026*
 
 ---

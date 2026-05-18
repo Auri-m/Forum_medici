@@ -826,6 +826,27 @@ try {
         input#username {
             padding-right: 38px !important;
         }
+
+        textarea {
+            width: 100%;
+            padding: 14px 16px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            color: var(--navy);
+            background: #f7f9fc;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.25s ease;
+            outline: none;
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        textarea:focus {
+            background: var(--white);
+            border-color: var(--teal);
+            box-shadow: 0 0 0 4px rgba(15, 159, 142, 0.08);
+        }
     </style>
 </head>
 
@@ -1048,6 +1069,14 @@ try {
                             </div>
                         </div>
 
+                        <div class="field">
+                            <label for="biografia">Biografia Medica (Opzionale)</label>
+                            <div class="input-wrap">
+                                <textarea id="biografia" name="biografia" maxlength="500" placeholder="Descrivi la tua esperienza clinica, aree di interesse e approccio alla medicina..."></textarea>
+                            </div>
+                            <p class="input-hint">Massimo 500 caratteri.</p>
+                        </div>
+
                         <div class="btn-row">
                             <button type="button" class="btn-back" onclick="prevStep(2)">← Indietro</button>
                             <button type="button" class="btn-next" onclick="nextStep(2)">Continua →</button>
@@ -1121,7 +1150,7 @@ try {
         function nextStep(from) {
             // Validazione base del pannello corrente
             const panel = document.getElementById('panel' + from);
-            const inputs = panel.querySelectorAll('input[required], select[required]');
+            const inputs = panel.querySelectorAll('input[required], select[required], textarea[required]');
             for (const inp of inputs) {
                 if (!inp.value.trim()) {
                     inp.focus();
@@ -1285,7 +1314,7 @@ try {
             let currentPanel = document.getElementById('panel' + currentStep);
 
             // Trova tutti gli input e i select dentro QUESTO pannello
-            let inputs = currentPanel.querySelectorAll('input, select');
+            let inputs = currentPanel.querySelectorAll('input, select, textarea');
             let allValid = true;
 
             // Controlla ogni singolo campo del pannello attuale

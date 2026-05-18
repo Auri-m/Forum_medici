@@ -88,10 +88,10 @@ $HERO_IMGS = [
 ];
 $SLIDE_TAGS = ['In evidenza', 'Aggiornamento', 'Notizie mediche', 'Ricerca'];
 $SLIDE_FALLBACK = [
-  ['title'=>'Linee guida ESC 2025: novità per la pratica cardiologica','description'=>'Le raccomandazioni aggiornate della Società Europea di Cardiologia per la gestione delle malattie cardiovascolari.','url'=>'https://www.giornaledicardiologia.it/archivio/4570/articoli/45733/','source'=>'Giornale di Cardiologia'],
-  ['title'=>'AIFA: aggiornamento farmaci autorizzati in Italia','description'=>'Lista completa dei medicinali con schede tecniche e note AIFA aggiornate al 2025.','url'=>'https://www.aifa.gov.it','source'=>'AIFA'],
-  ['title'=>'Congresso Nazionale ANMCO 2025 — Rimini','description'=>'15-17 maggio, Rimini. Iscriviti tramite MedicoForum e ottieni crediti ECM.','url'=>'https://cardioinfo.it/congresso/anmco/2025/56-congresso-nazionale-anmco-appuntamento-a-rimini-dal-15-al-17-maggio/','source'=>'CardioInfo'],
-  ['title'=>'FDA approva nuovo inibitore per tumori HER2+','description'=>'La comunità oncologica analizza l\'impatto clinico della nuova approvazione regolatoria statunitense.','url'=>'https://www.aifa.gov.it/-/fda-approva-un-nuovo-trattamento-per-ridurre-il-rischio-di-recidive-del-cancro-al-seno','source'=>'AIFA'],
+  ['title' => 'Linee guida ESC 2025: novità per la pratica cardiologica', 'description' => 'Le raccomandazioni aggiornate della Società Europea di Cardiologia per la gestione delle malattie cardiovascolari.', 'url' => 'https://www.giornaledicardiologia.it/archivio/4570/articoli/45733/', 'source' => 'Giornale di Cardiologia'],
+  ['title' => 'AIFA: aggiornamento farmaci autorizzati in Italia', 'description' => 'Lista completa dei medicinali con schede tecniche e note AIFA aggiornate al 2025.', 'url' => 'https://www.aifa.gov.it', 'source' => 'AIFA'],
+  ['title' => 'Congresso Nazionale ANMCO 2025 — Rimini', 'description' => '15-17 maggio, Rimini. Iscriviti tramite MedicoForum e ottieni crediti ECM.', 'url' => 'https://cardioinfo.it/congresso/anmco/2025/56-congresso-nazionale-anmco-appuntamento-a-rimini-dal-15-al-17-maggio/', 'source' => 'CardioInfo'],
+  ['title' => 'FDA approva nuovo inibitore per tumori HER2+', 'description' => 'La comunità oncologica analizza l\'impatto clinico della nuova approvazione regolatoria statunitense.', 'url' => 'https://www.aifa.gov.it/-/fda-approva-un-nuovo-trattamento-per-ridurre-il-rischio-di-recidive-del-cancro-al-seno', 'source' => 'AIFA'],
 ];
 
 $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'medicoforum_rss_v1.json';
@@ -101,11 +101,11 @@ if (file_exists($cacheFile)) {
   if (!empty($cached['articles'])) {
     foreach (array_slice($cached['articles'], 0, 4) as $i => $a) {
       $heroSlides[] = [
-        'title'       => $a['title'],
+        'title' => $a['title'],
         'description' => $a['description'] ?? '',
-        'url'         => $a['url'],
-        'source'      => $a['source'] ?? '',
-        'hero_image'  => $HERO_IMGS[$i % count($HERO_IMGS)],
+        'url' => $a['url'],
+        'source' => $a['source'] ?? '',
+        'hero_image' => $HERO_IMGS[$i % count($HERO_IMGS)],
       ];
     }
   }
@@ -210,7 +210,7 @@ if ($periodo === 'oggi') {
   $where[] = "domande.data_domanda >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
 }
 
-$sql = "SELECT id_domanda, titolo, domande.corpo, d.nome AS nomeD, cognome, sesso,
+$sql = "SELECT id_domanda, titolo, domande.corpo, d.id_dottore, d.nome AS nomeD, cognome, sesso,
                foto_profilo, s.nome AS nomeS, COUNT(id_risposta) AS nRisposte,
                specializzazione_filtro, anni_exp_filtro, ospedale_filtro,
                domande.data_domanda
@@ -2370,7 +2370,8 @@ $post->execute();
         <span class="live-dot"></span>
         Live
       </span>
-      <a href="https://www.giornaledicardiologia.it/archivio/4570/articoli/45733/">📋 Linee guida ESC 2025 aggiornate</a>
+      <a href="https://www.giornaledicardiologia.it/archivio/4570/articoli/45733/">📋 Linee guida ESC 2025
+        aggiornate</a>
     </div>
   </div>
 
@@ -2454,30 +2455,31 @@ $post->execute();
   <div class="hero-slider" id="heroSlider">
 
     <?php foreach ($heroSlides as $i => $slide):
-      $words    = explode(' ', trim($slide['title']));
+      $words = explode(' ', trim($slide['title']));
       $lastWord = array_pop($words);
       $titleMain = implode(' ', $words);
-      $tag       = $SLIDE_TAGS[$i % count($SLIDE_TAGS)];
-    ?>
-    <div class="slide <?= $i === 0 ? 'active' : '' ?>">
-      <img src="<?= htmlspecialchars($slide['hero_image']) ?>" alt="" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
-      <div class="slide-overlay"></div>
-      <div class="slide-content">
-        <div class="slide-inner">
-          <div class="slide-tag"><?= htmlspecialchars($tag) ?></div>
-          <h2 class="slide-title">
-            <?= htmlspecialchars($titleMain) ?><?= $titleMain ? ' ' : '' ?><em><?= htmlspecialchars($lastWord) ?></em>
-          </h2>
-          <p class="slide-desc"><?= htmlspecialchars(mb_substr($slide['description'], 0, 160)) ?></p>
-          <a href="<?= htmlspecialchars($slide['url']) ?>" target="_blank" rel="noopener noreferrer" class="slide-btn">
-            Leggi l'articolo →
-          </a>
-          <div style="margin-top:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35)">
-            <?= htmlspecialchars($slide['source']) ?>
+      $tag = $SLIDE_TAGS[$i % count($SLIDE_TAGS)];
+      ?>
+      <div class="slide <?= $i === 0 ? 'active' : '' ?>">
+        <img src="<?= htmlspecialchars($slide['hero_image']) ?>" alt="" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>">
+        <div class="slide-overlay"></div>
+        <div class="slide-content">
+          <div class="slide-inner">
+            <div class="slide-tag"><?= htmlspecialchars($tag) ?></div>
+            <h2 class="slide-title">
+              <?= htmlspecialchars($titleMain) ?>   <?= $titleMain ? ' ' : '' ?><em><?= htmlspecialchars($lastWord) ?></em>
+            </h2>
+            <p class="slide-desc"><?= htmlspecialchars(mb_substr($slide['description'], 0, 160)) ?></p>
+            <a href="<?= htmlspecialchars($slide['url']) ?>" target="_blank" rel="noopener noreferrer" class="slide-btn">
+              Leggi l'articolo →
+            </a>
+            <div
+              style="margin-top:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35)">
+              <?= htmlspecialchars($slide['source']) ?>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     <?php endforeach; ?>
 
     <!-- Controls -->
@@ -2488,8 +2490,12 @@ $post->execute();
         <?php endforeach; ?>
       </div>
       <div class="slide-arrows">
-        <div class="slide-arrow" id="prevSlide"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
-        <div class="slide-arrow" id="nextSlide"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+        <div class="slide-arrow" id="prevSlide"><svg viewBox="0 0 24 24">
+            <polyline points="15 18 9 12 15 6" />
+          </svg></div>
+        <div class="slide-arrow" id="nextSlide"><svg viewBox="0 0 24 24">
+            <polyline points="9 18 15 12 9 6" />
+          </svg></div>
       </div>
     </div>
 
@@ -2603,15 +2609,18 @@ $post->execute();
           echo '<article class="question-card">
             <div class="card-top">
               <div class="author-row">
-                <img src="img/' . $postSingolo["foto_profilo"] . '" class="author-avatar a3">
+                <a href="profilo.php?id=' . $postSingolo["id_dottore"] . '">
+                  <img src="img/' . htmlspecialchars($postSingolo["foto_profilo"]) . '" class="author-avatar a3">
+                </a>
                 <div>
-                  <div class="author-name">';
-          echo ($postSingolo["sesso"] == 'm') ? 'Dr. ' : 'Dott.ssa ';
-          $dataFormattata = $postSingolo["data_domanda"]
-            ? (new DateTime($postSingolo["data_domanda"]))->format('d M Y')
-            : '';
+                  <div class="author-name">
+                    <a href="profilo.php?id=' . $postSingolo["id_dottore"] . '" style="text-decoration: none; color: inherit;">';
+                    echo ($postSingolo["sesso"] == 'm') ? 'Dr. ' : 'Dott.ssa ';
+                    $dataFormattata = $postSingolo["data_domanda"]
+                      ? (new DateTime($postSingolo["data_domanda"]))->format('d M Y')
+                      : '';
 
-          echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '</div>
+                    echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '</div>
                   <div class="author-meta">
                     <span>' . $postSingolo["nomeS"] . '</span>
                     ' . ($dataFormattata ? '<span class="post-date"> · ' . $dataFormattata . '</span>' : '') . '
@@ -2870,10 +2879,10 @@ $post->execute();
 
   <script>
     // ── Slideshow (slide già nel DOM generate da PHP) ──
-    (function() {
+    (function () {
       var slides = document.querySelectorAll('#heroSlider .slide');
-      var dots   = document.querySelectorAll('#heroSlider .slide-dot');
-      var cur    = 0;
+      var dots = document.querySelectorAll('#heroSlider .slide-dot');
+      var cur = 0;
       var timer;
 
       function goTo(n) {
@@ -2886,13 +2895,13 @@ $post->execute();
 
       function startTimer() {
         clearInterval(timer);
-        timer = setInterval(function() { goTo(cur + 1); }, 6000);
+        timer = setInterval(function () { goTo(cur + 1); }, 6000);
       }
 
-      document.getElementById('nextSlide').addEventListener('click', function() { clearInterval(timer); goTo(cur + 1); startTimer(); });
-      document.getElementById('prevSlide').addEventListener('click', function() { clearInterval(timer); goTo(cur - 1); startTimer(); });
-      dots.forEach(function(d) {
-        d.addEventListener('click', function() { clearInterval(timer); goTo(+this.dataset.i); startTimer(); });
+      document.getElementById('nextSlide').addEventListener('click', function () { clearInterval(timer); goTo(cur + 1); startTimer(); });
+      document.getElementById('prevSlide').addEventListener('click', function () { clearInterval(timer); goTo(cur - 1); startTimer(); });
+      dots.forEach(function (d) {
+        d.addEventListener('click', function () { clearInterval(timer); goTo(+this.dataset.i); startTimer(); });
       });
 
       startTimer();
@@ -2995,153 +3004,201 @@ $post->execute();
 
   <!-- ══ CSS NEWS CARD SIDEBAR ══ -->
   <style>
-    @keyframes newsSkeletonPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    @keyframes newsSkeletonPulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
 
     .news-ad-card {
       border-radius: 18px;
       overflow: hidden;
       border: 1.5px solid var(--border);
-      box-shadow: 0 2px 12px rgba(13,31,60,.06);
+      box-shadow: 0 2px 12px rgba(13, 31, 60, .06);
       transition: all .2s;
       text-decoration: none;
       display: block;
       background: var(--white);
     }
+
     .news-ad-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 28px rgba(13,31,60,.1);
+      box-shadow: 0 8px 28px rgba(13, 31, 60, .1);
     }
+
     .news-ad-img-wrap {
       position: relative;
       height: 150px;
       overflow: hidden;
     }
+
     .news-ad-img-wrap img {
-      width: 100%; height: 100%;
-      object-fit: cover; display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
       transition: transform .4s;
     }
-    .news-ad-card:hover .news-ad-img-wrap img { transform: scale(1.04) }
+
+    .news-ad-card:hover .news-ad-img-wrap img {
+      transform: scale(1.04)
+    }
+
     .news-ad-live-badge {
-      position: absolute; top: 10px; right: 10px;
-      background: rgba(15,159,142,.88);
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(15, 159, 142, .88);
       color: #fff;
-      font-size: 9px; font-weight: 700;
-      letter-spacing: .1em; text-transform: uppercase;
-      padding: 3px 8px; border-radius: 5px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 5px;
       backdrop-filter: blur(4px);
     }
-    .news-ad-body { padding: 14px 16px 16px; }
-    .news-ad-source {
-      font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .1em;
-      color: var(--teal); margin-bottom: 5px;
+
+    .news-ad-body {
+      padding: 14px 16px 16px;
     }
+
+    .news-ad-source {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--teal);
+      margin-bottom: 5px;
+    }
+
     .news-ad-title {
       font-family: 'DM Serif Display', serif;
-      font-size: 14px; color: var(--navy);
-      line-height: 1.35; margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--navy);
+      line-height: 1.35;
+      margin-bottom: 8px;
       display: -webkit-box;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    .news-ad-meta { font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+
+    .news-ad-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
     .news-ad-cta {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--navy); color: #fff;
-      font-size: 11px; font-weight: 700;
-      padding: 7px 14px; border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--navy);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 8px;
       transition: background .2s;
     }
-    .news-ad-card:hover .news-ad-cta { background: var(--teal2); }
+
+    .news-ad-card:hover .news-ad-cta {
+      background: var(--teal2);
+    }
   </style>
 
   <!-- ══ JS NEWS DINAMICHE SIDEBAR ══ -->
   <script>
-  (function loadNewsAds() {
-    var skeleton  = document.getElementById('news-skeleton');
-    var container = document.getElementById('news-ads-container');
-    var errorBox  = document.getElementById('news-error');
+    (function loadNewsAds() {
+      var skeleton = document.getElementById('news-skeleton');
+      var container = document.getElementById('news-ads-container');
+      var errorBox = document.getElementById('news-error');
 
-    function esc(s) {
-      return String(s || '')
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+      function esc(s) {
+        return String(s || '')
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
 
-    // Restituisce data relativa: "Oggi", "Ieri", "2 giorni fa", oppure "15 mag"
-    function fmtDate(iso) {
-      if (!iso) return '';
-      try {
-        var d     = new Date(iso);
-        var now   = new Date();
-        var diffMs   = now - d;
-        var diffMins = Math.floor(diffMs / 60000);
-        var diffHrs  = Math.floor(diffMs / 3600000);
-        var diffDays = Math.floor(diffMs / 86400000);
+      // Restituisce data relativa: "Oggi", "Ieri", "2 giorni fa", oppure "15 mag"
+      function fmtDate(iso) {
+        if (!iso) return '';
+        try {
+          var d = new Date(iso);
+          var now = new Date();
+          var diffMs = now - d;
+          var diffMins = Math.floor(diffMs / 60000);
+          var diffHrs = Math.floor(diffMs / 3600000);
+          var diffDays = Math.floor(diffMs / 86400000);
 
-        if (diffMins < 1)   return 'Adesso';
-        if (diffMins < 60)  return diffMins + ' min fa';
-        if (diffHrs  < 24)  return diffHrs  + (diffHrs  === 1 ? ' ora fa'   : ' ore fa');
-        if (diffDays === 1) return 'Ieri';
-        if (diffDays < 7)   return diffDays + ' giorni fa';
+          if (diffMins < 1) return 'Adesso';
+          if (diffMins < 60) return diffMins + ' min fa';
+          if (diffHrs < 24) return diffHrs + (diffHrs === 1 ? ' ora fa' : ' ore fa');
+          if (diffDays === 1) return 'Ieri';
+          if (diffDays < 7) return diffDays + ' giorni fa';
 
-        // Oltre 7 giorni → data corta "15 mag"
-        return new Intl.DateTimeFormat('it-IT', { day:'2-digit', month:'short' }).format(d);
-      } catch(e) { return ''; }
-    }
+          // Oltre 7 giorni → data corta "15 mag"
+          return new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(d);
+        } catch (e) { return ''; }
+      }
 
-    function buildCard(a) {
-      var card = document.createElement('a');
-      card.className = 'news-ad-card';
-      card.href      = esc(a.url);
-      card.target    = '_blank';
-      card.rel       = 'noopener noreferrer';
-      var fb = 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&q=60';
-      var dateTxt = a.publishedAt
-        ? '<div class="news-ad-meta">🕑 ' + fmtDate(a.publishedAt) + '</div>'
-        : '';
-      card.innerHTML =
-        '<div class="news-ad-img-wrap">' +
+      function buildCard(a) {
+        var card = document.createElement('a');
+        card.className = 'news-ad-card';
+        card.href = esc(a.url);
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
+        var fb = 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&q=60';
+        var dateTxt = a.publishedAt
+          ? '<div class="news-ad-meta">🕑 ' + fmtDate(a.publishedAt) + '</div>'
+          : '';
+        card.innerHTML =
+          '<div class="news-ad-img-wrap">' +
           '<span class="news-ad-live-badge">📰 News</span>' +
           '<img src="' + esc(a.image || fb) + '" loading="lazy"' +
-               ' onerror="this.src=\'' + fb + '\'">' +
-        '</div>' +
-        '<div class="news-ad-body">' +
+          ' onerror="this.src=\'' + fb + '\'">' +
+          '</div>' +
+          '<div class="news-ad-body">' +
           '<div class="news-ad-source">' + esc(a.source) + '</div>' +
-          '<div class="news-ad-title">'  + esc(a.title)  + '</div>' +
+          '<div class="news-ad-title">' + esc(a.title) + '</div>' +
           dateTxt +
           '<span class="news-ad-cta">Leggi l\'articolo →</span>' +
-        '</div>';
-      return card;
-    }
+          '</div>';
+        return card;
+      }
 
-    fetch('NewAPI.php')
-      .then(function(r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
-      .then(function(data) {
-        skeleton.style.display = 'none';
-        if (!data.articles || data.articles.length === 0) {
+      fetch('NewAPI.php')
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (data) {
+          skeleton.style.display = 'none';
+          if (!data.articles || data.articles.length === 0) {
+            errorBox.style.display = 'block';
+            return;
+          }
+          // Mostra articoli dalla posizione 4 in poi (i primi 4 sono già nel carousel)
+          // Se ce ne sono meno di 4, mostra comunque i primi 2 disponibili
+          var toShow = data.articles.length > 4
+            ? data.articles.slice(4, 6)
+            : data.articles.slice(0, 2);
+          toShow.forEach(function (a) { container.appendChild(buildCard(a)); });
+          container.style.display = 'flex';
+        })
+        .catch(function (err) {
+          console.warn('[MedicoForum] Errore news sidebar:', err);
+          skeleton.style.display = 'none';
           errorBox.style.display = 'block';
-          return;
-        }
-        // Mostra articoli dalla posizione 4 in poi (i primi 4 sono già nel carousel)
-        // Se ce ne sono meno di 4, mostra comunque i primi 2 disponibili
-        var toShow = data.articles.length > 4
-          ? data.articles.slice(4, 6)
-          : data.articles.slice(0, 2);
-        toShow.forEach(function(a) { container.appendChild(buildCard(a)); });
-        container.style.display = 'flex';
-      })
-      .catch(function(err) {
-        console.warn('[MedicoForum] Errore news sidebar:', err);
-        skeleton.style.display = 'none';
-        errorBox.style.display = 'block';
-      });
-  })();
+        });
+    })();
   </script>
 </body>
 

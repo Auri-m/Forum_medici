@@ -20,7 +20,7 @@ if ($id <= 0) {
 }
 
 // ── Fetch domanda (aggiunti i filtri) ──
-$sql = "SELECT titolo, corpo, data_domanda,dottori.nome AS nomeD, cognome, sesso, foto_profilo, specializzazioni.nome AS nomeS,
+$sql = "SELECT titolo, corpo, data_domanda, domande.dottore AS id_dottore, dottori.nome AS nomeD, cognome, sesso, foto_profilo, specializzazioni.nome AS nomeS,
                specializzazione_filtro, anni_exp_filtro, ospedale_filtro
         FROM domande 
         JOIN dottori ON dottore = id_dottore
@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // ── Fetch risposte ──
-$sql = "SELECT corpo, data_risposta, dottori.nome AS nomeD, cognome, sesso, foto_profilo
+$sql = "SELECT corpo, data_risposta, risposte.dottore AS id_dottore, dottori.nome AS nomeD, cognome, sesso, foto_profilo
         FROM risposte
         JOIN dottori ON dottore = id_dottore
         WHERE domanda = ?
@@ -591,11 +591,15 @@ $risposte = $stmt->fetchAll(PDO::FETCH_ASSOC);
           <?php foreach ($risposte as $i => $r): ?>
             <div class="reply-bubble" style="animation-delay: <?= $i * 0.05 ?>s">
               <div class="reply-author">
-                <img src="img/<?= htmlspecialchars($r['foto_profilo']) ?>" class="reply-avatar" alt="">
+                <a href="profilo.php?id=<?= $r['id_dottore'] ?>&disc=<?= $id ?>">
+                  <img src="img/<?= htmlspecialchars($r['foto_profilo']) ?>" class="reply-avatar" alt="">
+                </a>
                 <div>
                   <div class="reply-name">
-                    <?= $r['sesso'] === 'm' ? 'Dr.' : 'Dott.ssa' ?>
-                    <?= htmlspecialchars($r['nomeD'] . ' ' . $r['cognome']) ?>
+                    <a href="profilo.php?id=<?= $r['id_dottore'] ?>&disc=<?= $id ?>" style="text-decoration: none; color: inherit;">
+                      <?= $r['sesso'] === 'm' ? 'Dr.' : 'Dott.ssa' ?>
+                      <?= htmlspecialchars($r['nomeD'] . ' ' . $r['cognome']) ?>
+                    </a>
                   </div>
                   <div class="reply-date">
                     <?= date('d/m/Y', strtotime($r['data_risposta'])) ?>
@@ -647,11 +651,15 @@ $risposte = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="q-divider"></div>
 
         <div class="q-author">
-          <img src="img/<?= htmlspecialchars($domanda['foto_profilo']) ?>" class="q-avatar" alt="">
+          <a href="profilo.php?id=<?= $domanda['id_dottore'] ?>&disc=<?= $id ?>">
+            <img src="img/<?= htmlspecialchars($domanda['foto_profilo']) ?>" class="q-avatar" alt="">
+          </a>
           <div>
             <div class="q-author-name">
-              <?= $domanda['sesso'] === 'm' ? 'Dr.' : 'Dott.ssa' ?>
-              <?= htmlspecialchars($domanda['nomeD'] . ' ' . $domanda['cognome']) ?>
+              <a href="profilo.php?id=<?= $domanda['id_dottore'] ?>&disc=<?= $id ?>" style="text-decoration: none; color: inherit;">
+                <?= $domanda['sesso'] === 'm' ? 'Dr.' : 'Dott.ssa' ?>
+                <?= htmlspecialchars($domanda['nomeD'] . ' ' . $domanda['cognome']) ?>
+              </a>
             </div>
             <div class="q-author-spec"><?= htmlspecialchars($domanda['nomeS']) ?></div>
             <div class="q-date">

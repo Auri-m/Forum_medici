@@ -1,13 +1,35 @@
 <?php
 require_once 'database.php'; // includo il file di configurazione
+
+// Controllo di sicurezza: se l'utente non è loggato, reindirizza al Login
+if (!isset($_SESSION['utente'])) {
+    header("Location: Login.php");
+    exit();
+}
+
 try {
     $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
     $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-}// try
-catch (PDOException $e) {
+} catch (PDOException $e) {
     die("Errore nella gestione del database $db: " . $e->getMessage());
-}// catch
+}
 
+// ── LOGICA PROFILO DINAMICO ──
+$id_richiesto = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+$id_profilo = $id_richiesto > 0 ? $id_richiesto : $_SESSION['utente'];
+
+// Flag booleano per capire se il profilo visualizzato è di chi ha fatto l'accesso
+$is_own_profile = ($id_profilo == $_SESSION['utente']);
+
+// ── LOGICA GESTIONE DELLA PROVENIENZA (BACK BUTTON) ──
+$disc_id = isset($_GET['disc']) ? (int) $_GET['disc'] : 0;
+if ($disc_id > 0) {
+    $back_url = "discussione.php?id=" . $disc_id;
+    $back_text = "Torna alla Discussione";
+} else {
+    $back_url = "home.php";
+    $back_text = "Torna alla Home";
+}
 ?>
 
 <!DOCTYPE html>
@@ -95,6 +117,7 @@ catch (PDOException $e) {
             transition: all .2s;
             background: var(--bg);
             border: 1px solid var(--border);
+            white-space: nowrap;
         }
 
         .back-btn:hover {
@@ -361,7 +384,7 @@ catch (PDOException $e) {
             }
         }
 
-        /* NUOVA SEZIONE: About Card */
+        /* About Card */
         .about-card {
             background: var(--white);
             border: 1.5px solid var(--border);
@@ -539,17 +562,7 @@ catch (PDOException $e) {
             color: var(--teal2);
         }
 
-        /* ══════════ RESPONSIVE ══════════ */
-        @media (max-width: 850px) {
-            .page-wrapper {
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                position: static;
-            }
-        }
-
+        /* Pinned card */
         .btn-logout {
             display: inline-flex;
             align-items: center;
@@ -557,12 +570,9 @@ catch (PDOException $e) {
             margin-top: 20px;
             padding: 10px 20px;
             background-color: #f8d7da;
-            /* Rosso chiarissimo */
             color: #b02a37;
-            /* Rosso scuro per il testo */
             text-decoration: none;
             border-radius: 50px;
-            /* Arrotondato "pill" */
             font-weight: 600;
             font-size: 0.9rem;
             transition: all 0.3s ease;
@@ -575,32 +585,31 @@ catch (PDOException $e) {
             box-shadow: 0 4px 12px rgba(176, 42, 55, 0.2);
             transform: translateY(-2px);
         }
-
-        .btn-logout .icon {
-            margin-right: 8px;
-            font-size: 1.1rem;
-        }
     </style>
 </head>
 
 <body>
 
     <header>
-        <a href="home.php" class="back-btn">
+        <a href="<?= $back_url ?>" class="back-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Torna alla Home
+            <?= $back_text ?>
         </a>
-        <a href="modifica_profilo.php" class="edit-profile-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            Modifica profilo
-        </a>
+
+        <?php if ($is_own_profile): ?>
+            <a href="modifica_profilo.php" class="edit-profile-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Modifica profilo
+            </a>
+        <?php endif; ?>
+
         <div class="nav-logo">
             <span class="cross">✚</span>
             MedicoForum
@@ -623,7 +632,7 @@ catch (PDOException $e) {
                             JOIN specializzazioni s ON d.specializzazione = s.codice
                             WHERE d.id_dottore = ?";
                     $profilo = $connessione->prepare($sql);
-                    $profilo->execute(array($_SESSION["utente"]));
+                    $profilo->execute(array($id_profilo));
 
                     if ($profilo->rowCount() > 0) {
                         $profilo = $profilo->fetch(PDO::FETCH_ASSOC);
@@ -634,13 +643,13 @@ catch (PDOException $e) {
                         } else {
                             echo 'Dott.ssa ';
                         }
-                        echo $profilo["nome"] . ' ' . $profilo["cognome"] . '</h1>
-                        <div class="spec-badge">' . $profilo["nomeS"] . '</div>
+                        echo htmlspecialchars($profilo["nome"] . ' ' . $profilo["cognome"]) . '</h1>
+                        <div class="spec-badge">' . htmlspecialchars($profilo["nomeS"]) . '</div>
                         
                         <div class="profile-stats">
                         <div class="pstat">
                             <span class="pstat-label">Ospedale</span>
-                            <span class="pstat-val">' . $profilo["nomeO"] . '</span>
+                            <span class="pstat-val">' . htmlspecialchars($profilo["nomeO"]) . '</span>
                         </div>
                         <div class="pstat">
                             <span class="pstat-label">Esperienza</span>
@@ -653,7 +662,10 @@ catch (PDOException $e) {
                         ';
                     }
                     ?>
-                    <a href="login.php" class="btn-logout"><span class="icon"></span> Esci dal Profilo</a>
+
+                    <?php if ($is_own_profile): ?>
+                        <a href="login.php" class="btn-logout"><span class="icon"></span> Esci dal Profilo</a>
+                    <?php endif; ?>
                 </div>
             </div>
     </div>
@@ -664,7 +676,7 @@ catch (PDOException $e) {
         <article class="about-card">
             <h2 class="about-title">Biografia Medica</h2>
             <?php
-            echo '<p class="about-text">' . $profilo['biografia'] . '</p>';
+            echo '<p class="about-text">' . nl2br(htmlspecialchars($profilo['biografia'])) . '</p>';
             ?>
         </article>
 
@@ -676,49 +688,53 @@ catch (PDOException $e) {
         <?php
         $sql = 'SELECT titolo, corpo, data_domanda, id_domanda FROM domande WHERE dottore=? ORDER BY data_domanda DESC';
         $domande = $connessione->prepare($sql);
-        $domande->execute(array($_SESSION["utente"]));
+        $domande->execute(array($id_profilo));
 
         if ($domande->rowCount() > 0) {
             while ($domanda = $domande->fetch(PDO::FETCH_ASSOC)) {
                 echo '<article class="question-card">
             <div class="card-top">';
-                //<div class="card-tags">
-                //    <span class="spec-tag">Medicina Interna</span>
-                //    <span class="spec-tag">Diagnostica</span>
-                //</div>
-                echo '<span class="date-tag">' . $domanda['data_domanda'] . '</span>
+                echo '<span class="date-tag">' . date('d/m/Y', strtotime($domanda['data_domanda'])) . '</span>
             </div>
-            <h3 class="question-title">' . $domanda['titolo'] . '</h3>
-            <p class="question-preview">' . $domanda['corpo'] . '</p>
+            <h3 class="question-title">' . htmlspecialchars($domanda['titolo']) . '</h3>
+            <p class="question-preview">' . htmlspecialchars($domanda['corpo']) . '</p>
             <div class="card-footer">
                 <a href="discussione.php?id=' . $domanda["id_domanda"] . '" class="read-more">Leggi la discussione →</a>
             </div>
         </article>';
             }
         } else {
-            echo '<p class="about-text">Non hai ancora pubblicato nessuna domanda. Condividi i tuoi casi clinici per ricevere feedback dalla community!</p>';
+            if ($is_own_profile) {
+                echo '<p class="about-text">Non hai ancora pubblicato nessuna domanda. Condividi i tuoi casi clinici per ricevere feedback dalla community!</p>';
+            } else {
+                echo '<p class="about-text">Questo medico non ha ancora pubblicato nessuna domanda.</p>';
+            }
         }
 
-        echo '<h4 class="feed-title" style="margin-bottom: 20px;">Risposte</h4>';
+        echo '<h4 class="feed-title" style="margin-top: 30px; margin-bottom: 20px;">Risposte</h4>';
 
         $sql = 'SELECT corpo, data_risposta, domanda FROM risposte WHERE dottore=? ORDER BY data_risposta DESC';
         $risposte = $connessione->prepare($sql);
-        $risposte->execute(array($_SESSION["utente"]));
+        $risposte->execute(array($id_profilo));
 
         if ($risposte->rowCount() > 0) {
             while ($risposta = $risposte->fetch(PDO::FETCH_ASSOC)) {
                 echo '<article class="question-card">
             <div class="card-top">
-                <span class="date-tag">' . $risposta['data_risposta'] . '</span>
+                <span class="date-tag">' . date('d/m/Y', strtotime($risposta['data_risposta'])) . '</span>
             </div>
-            <p class="question-preview">' . $risposta['corpo'] . '</p>
+            <p class="question-preview">' . htmlspecialchars($risposta['corpo']) . '</p>
             <div class="card-footer">
                 <a href="discussione.php?id=' . $risposta["domanda"] . '" class="read-more">Leggi la discussione →</a>
             </div>
         </article>';
             }
         } else {
-            echo '<p class="about-text">Non hai ancora risposto a nessuna domanda. Partecipa alle discussioni per condividere la tua esperienza!</p>';
+            if ($is_own_profile) {
+                echo '<p class="about-text">Non hai ancora risposto a nessuna domanda. Partecipa alle discussioni per condividere la tua esperienza!</p>';
+            } else {
+                echo '<p class="about-text">Questo medico non ha ancora risposto a nessuna domanda.</p>';
+            }
         }
         ?>
     </main>

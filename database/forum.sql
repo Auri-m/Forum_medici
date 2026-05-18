@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Creato il: Mag 17, 2026 alle 21:51
+-- Creato il: Mag 18, 2026 alle 17:13
 -- Versione del server: 10.4.32-MariaDB
 -- Versione PHP: 8.2.12
 
@@ -93,7 +93,8 @@ INSERT INTO `credenziali` (`id_credenziali`, `username`, `password`, `dottore`) 
 (75, 'gio', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 65),
 (76, 'Pietro', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 66),
 (77, 'Gianna', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 67),
-(78, 'aurix', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 68);
+(78, 'aurix', '$2y$10$3tgamoDdAx2ENehMJXIEce8OAjWa6Zx3s2EbcG3PToieC1jC5rEq2', 68),
+(79, 'gino', '$2y$10$.wWw5s5FXbGK.4aZggOCwO.RJemk8JdgVjsnWj4A2dZgH47HyzQ26', 69);
 
 -- --------------------------------------------------------
 
@@ -204,11 +205,12 @@ INSERT INTO `dottori` (`id_dottore`, `nome`, `cognome`, `sesso`, `data_nascita`,
 (48, 'Sofia', 'Donati', '', '1973-05-03', '2003-05-03', 'default_f.jpg', 8, 3, 'Dirigente Medico presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureato con lode all\'Università degli Studi di Milano, vanta 23 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolto nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
 (49, 'Valerio', 'D\'Amico', '', '1980-05-03', '2010-05-03', 'default_m.jpg', 9, 4, 'Dirigente Medico presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureato con lode all\'Università degli Studi di Milano, vanta 16 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolto nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
 (50, 'Veronica', 'Ferrero', 'f', '1989-05-03', '2019-05-03', 'default_f.jpg', 10, 5, 'Dirigente Medica presso l\'U.O.C. di Medicina Interna del Policlinico di Milano. Laureata con lode all\'Università degli Studi di Milano, vanta 7 anni di esperienza. Ha conseguito la specializzazione focalizzandosi sulla diagnostica differenziale complessa e sulle patologie sistemiche a impronta autoimmunitaria. Attivamente coinvolta nella ricerca clinica e nel tutoraggio dei medici specializzandi.'),
-(64, 'Giovanni', 'totti', 'm', '1900-01-01', '1970-01-01', 'default_m.jpg', 11, 10, NULL),
-(65, 'Giovanni', 'Nardin1', 'm', '1900-05-06', '2000-08-07', 'default_m.jpg', 20, 13, NULL),
-(66, 'Pietro', 'Pietro', 'm', '1991-01-01', '2000-01-01', 'default_m.jpg', 16, 8, NULL),
-(67, 'Gianna', 'Giorgi', 'f', '2000-05-04', '1990-06-04', 'default_f.jpg', 12, 7, NULL),
-(68, 'Auri', 'ska', 'm', '2000-04-29', '2024-04-29', 'default_m.jpg', 12, 1, NULL);
+(64, 'Giovanni', 'totti', 'm', '1900-01-01', '1970-01-01', 'default_m.jpg', 11, 10, 'Questo medico non ha ancora inserito una biografia personale.'),
+(65, 'Giovanni', 'Nardin1', 'm', '1900-05-06', '2000-08-07', 'default_m.jpg', 20, 13, 'Questo medico non ha ancora inserito una biografia personale.'),
+(66, 'Pietro', 'Pietro', 'm', '1991-01-01', '2000-01-01', 'default_m.jpg', 16, 8, 'Questo medico non ha ancora inserito una biografia personale.'),
+(67, 'Gianna', 'Giorgi', 'f', '2000-05-04', '1990-06-04', 'default_f.jpg', 12, 7, 'Questo medico non ha ancora inserito una biografia personale.'),
+(68, 'Auri', 'ska', 'm', '2000-04-29', '2024-04-29', 'default_m.jpg', 12, 1, 'Questo medico non ha ancora inserito una biografia personale.'),
+(69, 'Gino', 'Pasticcio', 'm', '1994-08-16', '2020-10-29', 'default_m.jpg', 20, 11, 'Questo medico non ha ancora inserito una biografia personale.');
 
 -- --------------------------------------------------------
 
@@ -375,7 +377,7 @@ ALTER TABLE `specializzazioni`
 -- AUTO_INCREMENT per la tabella `credenziali`
 --
 ALTER TABLE `credenziali`
-  MODIFY `id_credenziali` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=79;
+  MODIFY `id_credenziali` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
 
 --
 -- AUTO_INCREMENT per la tabella `domande`
@@ -387,7 +389,7 @@ ALTER TABLE `domande`
 -- AUTO_INCREMENT per la tabella `dottori`
 --
 ALTER TABLE `dottori`
-  MODIFY `id_dottore` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
+  MODIFY `id_dottore` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
 
 --
 -- AUTO_INCREMENT per la tabella `ospedali`

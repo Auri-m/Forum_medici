@@ -7,6 +7,37 @@ try {
   die("Errore nella gestione del database $db: " . $e->getMessage());
 }
 
+function sostituisciAccenti($testo)
+{
+  if (empty($testo))
+    return $testo;
+
+  $mappa = [
+    'à' => "a'",
+    'á' => "a'",
+    'è' => "e'",
+    'é' => "e'",
+    'ì' => "i'",
+    'í' => "i'",
+    'ò' => "o'",
+    'ó' => "o'",
+    'ù' => "u'",
+    'ú' => "u'",
+    'À' => "A'",
+    'Á' => "A'",
+    'È' => "E'",
+    'É' => "E'",
+    'Ì' => "I'",
+    'Í' => "I'",
+    'Ò' => "O'",
+    'Ó' => "O'",
+    'Ù' => "U'",
+    'Ú' => "U'"
+  ];
+
+  return strtr($testo, $mappa);
+}
+
 if (!empty($_SESSION['utente']) && !$_SESSION["accesso"]) {
   unset($_SESSION["errore"]);
 } else {
@@ -29,14 +60,16 @@ if (!empty($_SESSION['utente']) && !$_SESSION["accesso"]) {
   if (!$accesso_riuscito) {
     unset($_SESSION["utente"]);
     $_SESSION["errore"] = -1;
-    header("Location: Login.php");
+    header("Location: login.php");
     exit();
   }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'nuova_discussione') {
   $titolo = trim($_POST['titolo'] ?? '');
+  $titolo = sostituisciAccenti($titolo);
   $corpo = trim($_POST['corpo'] ?? '');
+  $corpo = sostituisciAccenti($corpo);
   $spec = !empty($_POST['specializzazione']) ? (int) $_POST['specializzazione'] : null;
   $exp = !empty($_POST['anni_exp']) ? (int) $_POST['anni_exp'] : null;
   $osp = !empty($_POST['ospedale']) ? (int) $_POST['ospedale'] : null;
@@ -2531,13 +2564,6 @@ $post->execute();
         <div class="qstat-label">Specialità</div>
       </div>
     </div>
-    <div class="qstat">
-      <div class="qstat-icon">⭐</div>
-      <div>
-        <div class="qstat-num">4.9 / 5</div>
-        <div class="qstat-label">Soddisfazione</div>
-      </div>
-    </div>
   </div>
 
   <!-- ══ LAYOUT 3 COLONNE ══ -->
@@ -2615,12 +2641,14 @@ $post->execute();
                 <div>
                   <div class="author-name">
                     <a href="profilo.php?id=' . $postSingolo["id_dottore"] . '" style="text-decoration: none; color: inherit;">';
-                    echo ($postSingolo["sesso"] == 'm') ? 'Dr. ' : 'Dott.ssa ';
-                    $dataFormattata = $postSingolo["data_domanda"]
-                      ? (new DateTime($postSingolo["data_domanda"]))->format('d M Y')
-                      : '';
+                      echo ($postSingolo["sesso"] == 'm') ? 'Dr. ' : 'Dott.ssa ';
+                      $dataFormattata = $postSingolo["data_domanda"]
+                        ? (new DateTime($postSingolo["data_domanda"]))->format('d M Y')
+                        : '';
 
-                    echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '</div>
+                      echo $postSingolo["nomeD"] . ' ' . $postSingolo["cognome"] . '
+                    </a>
+                  </div>
                   <div class="author-meta">
                     <span>' . $postSingolo["nomeS"] . '</span>
                     ' . ($dataFormattata ? '<span class="post-date"> · ' . $dataFormattata . '</span>' : '') . '

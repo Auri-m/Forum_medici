@@ -9,10 +9,31 @@ try {
     die("Errore di connessione: " . $e->getMessage());
 }
 
+function sostituisciAccenti($testo) {
+    if (empty($testo)) return $testo;
+
+    $mappa = [
+        'à' => "a'", 'á' => "a'",
+        'è' => "e'", 'é' => "e'",
+        'ì' => "i'", 'í' => "i'",
+        'ò' => "o'", 'ó' => "o'",
+        'ù' => "u'", 'ú' => "u'",
+        'À' => "A'", 'Á' => "A'",
+        'È' => "E'", 'É' => "E'",
+        'Ì' => "I'", 'Í' => "I'",
+        'Ò' => "O'", 'Ó' => "O'",
+        'Ù' => "U'", 'Ú' => "U'"
+    ];
+
+    return strtr($testo, $mappa);
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $nome = trim($_POST['nome'] ?? '');
+    $nome = sostituisciAccenti($nome);
     $cognome = trim($_POST['cognome'] ?? '');
+    $cognome = sostituisciAccenti($cognome);
     $sesso = $_POST['sesso'] ?? '';
     $specialita = $_POST['specialita'] ?? null;
     $struttura = $_POST['struttura'] ?? null;
@@ -23,6 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($biografia)) {
         $biografia = "Questo medico non ha ancora inserito una biografia personale.";
     } elseif (mb_strlen($biografia) > 500) {
+        $biografia = sostituisciAccenti($biografia);
         $biografia = mb_substr($biografia, 0, 500);
     }
 

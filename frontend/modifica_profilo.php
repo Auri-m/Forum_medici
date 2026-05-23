@@ -6,6 +6,25 @@ if (!isset($_SESSION['utente'])) {
   exit();
 }
 
+function sostituisciAccenti($testo) {
+    if (empty($testo)) return $testo;
+
+    $mappa = [
+        'à' => "a'", 'á' => "a'",
+        'è' => "e'", 'é' => "e'",
+        'ì' => "i'", 'í' => "i'",
+        'ò' => "o'", 'ó' => "o'",
+        'ù' => "u'", 'ú' => "u'",
+        'À' => "A'", 'Á' => "A'",
+        'È' => "E'", 'É' => "E'",
+        'Ì' => "I'", 'Í' => "I'",
+        'Ò' => "O'", 'Ó' => "O'",
+        'Ù' => "U'", 'Ú' => "U'"
+    ];
+
+    return strtr($testo, $mappa);
+}
+
 try {
   $connessione = new PDO("mysql:host=$host;dbname=$db", $user, $password);
   $connessione->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -23,8 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $dottore_attuale = $stmt_old->fetch(PDO::FETCH_ASSOC);
 
   $nome = trim($_POST['nome'] ?? '');
+  $nome = sostituisciAccenti($nome);
   $cognome = trim($_POST['cognome'] ?? '');
+  $cognome = sostituisciAccenti($cognome);
   $biografia = trim($_POST['biografia'] ?? '');
+  $biografia = sostituisciAccenti($biografia);
   $data_inizio_lavoro = isset($_POST['data_inizio_lavoro']) && $_POST['data_inizio_lavoro'] !== '' ? $_POST['data_inizio_lavoro'] : null;
   $ospedale = isset($_POST['ospedale']) && $_POST['ospedale'] !== '' ? (int) $_POST['ospedale'] : null;
   $specializzaz = trim($_POST['specializzazione'] ?? '');

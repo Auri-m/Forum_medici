@@ -899,7 +899,7 @@ try {
         <div class="auth-form-side">
             <div class="form-inner">
 
-                <a href="Login.php" class="logo">
+                <a href="login.php" class="logo">
                     <div class="logo-mark">✚</div>
                     <div class="logo-text">MedicoForum</div>
                 </a>
